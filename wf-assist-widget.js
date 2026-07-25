@@ -19,6 +19,8 @@
   const localSpeechApi = new URL("/api/wf-speech", scriptUrl.origin).href;
   const localVoiceConfigApi = new URL("/api/wf-config", scriptUrl.origin).href;
   const localRealtimeApi = new URL("/api/wf-realtime-session", scriptUrl.origin).href;
+  const localWeatherApi = new URL("/api/wf-weather", scriptUrl.origin).href;
+  const localNewsApi = new URL("/api/wf-news", scriptUrl.origin).href;
   const config = {
     api: currentScript?.dataset.wfApi || localApi,
     leadApi: currentScript?.dataset.wfLeadApi || localLeadApi,
@@ -26,6 +28,8 @@
     speechApi: currentScript?.dataset.wfSpeechApi || localSpeechApi,
     voiceConfigApi: currentScript?.dataset.wfVoiceConfigApi || localVoiceConfigApi,
     realtimeApi: currentScript?.dataset.wfRealtimeApi || localRealtimeApi,
+    weatherApi: currentScript?.dataset.wfWeatherApi || localWeatherApi,
+    newsApi: currentScript?.dataset.wfNewsApi || localNewsApi,
     logo: currentScript?.dataset.wfLogo || "https://wingsforever.pro/wp-content/uploads/2026/07/WF-final-logo-branding-animation-with-trannsperacy.gif",
     fallbackLogo: "https://wingsforever.pro/wp-content/uploads/2026/05/new-WF-2048x2048.png",
     title: currentScript?.dataset.wfTitle || "WF Assist",
@@ -34,7 +38,7 @@
   };
 
   const text = {
-    greeting: "Hello — I’m WF Assist. I can help you explore Pratyaksh Kumar’s motion design and visual design work, understand creative services, or start a project enquiry. What are you looking to create?",
+    greeting: "Hey — how is your day going? How are you feeling? I’m WF Assist, a friendly creative and practical guide. I can help with your portfolio ideas, motion design questions, everyday problem-solving, or a new project. Where would you like to begin?",
     unavailable: "I’m having trouble connecting right now. I can still help you explore the portfolio or you can contact Pratyaksh directly at pratyakshkumar095@gmail.com.",
     voiceUnavailable: "Voice input is not available in this browser. You can still type your question below.",
   };
@@ -202,7 +206,7 @@
     ui.launcher.setAttribute("aria-expanded", "true");
     ui.launcher.setAttribute("aria-label", "Close WF Assist");
     if (!state.conversation.length) {
-      addMessage(text.greeting, "assistant", { speak: false });
+      addMessage(text.greeting, "assistant", { speak: state.voiceReplies });
       state.conversation.push({ role: "assistant", content: text.greeting });
     }
     if (focusInput) window.setTimeout(() => ui.input.focus(), 150);
@@ -242,6 +246,51 @@
     if (/(contact|email|talk|reach)/.test(query)) return "You can contact Pratyaksh Kumar at pratyakshkumar095@gmail.com. Include your project goal, the assets you need, any references, and an approximate timeline for the clearest next step. Would you like me to help outline your brief?";
     if (/(project|portfolio|work)/.test(query)) return "The portfolio is arranged around Wings Projects, Motion Design Lab, and the Visual Design Archive. Try Through the Eyes of Football for motion storytelling, The Dream Pursuit for trailer work, or Global Race for poster design. What kind of work interests you most?";
     return "I can help you discover the WF portfolio, explain motion and visual design services, or shape a new project brief. What would you like to know?";
+  }
+
+  function weatherLocationFrom(message) {
+    const match = message.match(/(?:weather|temperature|forecast|rain|snow)\s*(?:like)?\s*(?:in|for|at)\s+([^?.!]+)/i);
+    return match?.[1]?.replace(/\b(today|tomorrow|now|please)\b/gi, "").trim() || "";
+  }
+
+  function newsTopicFrom(message) {
+    const match = message.match(/(?:news|headlines)\s*(?:about|on|for|in)?\s*([^?.!]+)/i);
+    const topic = match?.[1]?.trim();
+    return topic && !/^(today|latest|current|now)$/i.test(topic) ? topic : "world news";
+  }
+
+  function wantsLiveWeather(message) {
+    return /\b(weather|temperature|forecast)\b/i.test(message);
+  }
+
+  function wantsLiveNews(message) {
+    return /\b(news|headlines)\b/i.test(message);
+  }
+
+  async function resolveLiveQuestion(message) {
+    if (wantsLiveWeather(message)) {
+      const city = weatherLocationFrom(message);
+      if (!city) return "I can look up a live weather snapshot. Which city or region would you like to check?";
+      const url = new URL(config.weatherApi, window.location.href);
+      url.searchParams.set("city", city);
+      const response = await fetch(url);
+      const weather = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(weather.error || "Live weather is unavailable right now.");
+      const temperature = Number(weather.temperature).toFixed(0);
+      const feels = Number(weather.apparentTemperature).toFixed(0);
+      return `Live weather snapshot for ${weather.location}: ${temperature}°C, feels like ${feels}°C, with ${weather.condition} and wind around ${Number(weather.wind).toFixed(0)} km/h. This is the current local observation from ${weather.observedAt}. Would you like a creative activity idea that fits the weather?`;
+    }
+    if (wantsLiveNews(message)) {
+      const topic = newsTopicFrom(message);
+      const url = new URL(config.newsApi, window.location.href);
+      url.searchParams.set("topic", topic);
+      const response = await fetch(url);
+      const news = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(news.error || "Live news is unavailable right now.");
+      const summary = news.articles.map((article, index) => `${index + 1}. ${article.title} — ${article.source}`).join("\n");
+      return `Here is a live news snapshot for ${news.topic}, based on recent indexed reports:\n${summary}\n\nPlease open the original sources to verify developing details. Would you like a focused topic, such as design, technology, sport, or a specific country?`;
+    }
+    return null;
   }
 
   function startLead() {
@@ -319,6 +368,19 @@
       startLead();
       return;
     }
+    try {
+      const liveAnswer = await resolveLiveQuestion(message);
+      if (liveAnswer) {
+        addMessage(liveAnswer, "assistant", { speak: voice || state.voiceReplies });
+        state.conversation.push({ role: "assistant", content: liveAnswer });
+        return;
+      }
+    } catch (error) {
+      const liveError = error.message || "Live information is unavailable right now.";
+      addMessage(liveError, "assistant", { speak: voice || state.voiceReplies });
+      state.conversation.push({ role: "assistant", content: liveError });
+      return;
+    }
     if (state.realtime && sendRealtimeText(message)) return;
 
     const typing = addMessage("", "assistant", { typing: true });
@@ -326,7 +388,7 @@
       const response = await fetch(config.api, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: state.conversation.slice(-12), voice }),
+        body: JSON.stringify({ messages: state.conversation.slice(-30), voice }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || text.unavailable);

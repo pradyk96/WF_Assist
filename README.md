@@ -67,6 +67,8 @@ A real GPT-level widget needs a secure server because its AI key must remain pri
   data-wf-transcribe-api="https://assist.your-domain.com/api/wf-transcribe"
   data-wf-speech-api="https://assist.your-domain.com/api/wf-speech"
   data-wf-realtime-api="https://assist.your-domain.com/api/wf-realtime-session"
+  data-wf-weather-api="https://assist.your-domain.com/api/wf-weather"
+  data-wf-news-api="https://assist.your-domain.com/api/wf-news"
   data-wf-logo="https://wingsforever.pro/wp-content/uploads/2026/07/WF-final-logo-branding-animation-with-trannsperacy.gif"
   data-wf-title="WF Assist"
   data-wf-site-url="https://wingsforever.pro/"

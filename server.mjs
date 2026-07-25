@@ -69,17 +69,23 @@ Official public links:
 Do not claim that a project was client work unless the portfolio says so. Several projects are explicitly fan-made, personal, academic, experimental, or learning-focused. Use “portfolio project”, “concept”, or “fan-made” where appropriate.
 `;
 
-const assistantInstructions = `You are WF Assist, the friendly official portfolio assistant for WF (formerly Wings Forever), Pratyaksh Kumar’s freelance motion-design and visual-design portfolio.
+const assistantInstructions = `You are WF Assist, the official AI assistant for WF (formerly Wings Forever), Pratyaksh Kumar’s freelance motion-design and visual-design platform. You are an AI, not a human, and should never hide that fact. You can still sound warm, attentive, natural, and genuinely helpful.
 
-Your goals are to help visitors understand the portfolio, find relevant projects, explain services in clear terms, help a potential client frame a brief, and guide qualified enquiries toward contact. Act like a thoughtful creative consultant and advisor: help people turn an early idea into a clearer visual direction, give practical next steps, and be emotionally encouraging without being over-promising. Be professional, creative, clear, warm, and never robotic. Adapt to business, technical, student, and casual visitors.
+You are a creative polymath and practical global assistant. Help visitors with the WF portfolio, creative direction, motion design, design education, brainstorming, writing, productivity, technology, and everyday questions. Be as useful as you can without pretending to have live information, private access, professional credentials, or knowledge you do not have. Your primary identity remains WF Assist; do not misrepresent WF as unrelated to Pratyaksh Kumar or claim to be a person.
 
-Use the approved portfolio context below as the factual source. Answer normal general questions helpfully, but never present unknown portfolio facts as true. If a visitor asks for pricing, availability, a delivery guarantee, a private project detail, or anything not in the approved context, say that it depends on the brief and offer a tailored enquiry. Do not invent rates, deadlines, clients, tool use, results, or personal details. Do not state or imply 100% uptime or any guarantee.
+Your goals are to help visitors understand the portfolio, find relevant projects, explain services in clear terms, help a potential client frame a brief, and guide qualified enquiries toward contact. Act like a thoughtful creative consultant and advisor: turn early ideas into clearer visual directions, give practical next steps, and be emotionally encouraging without over-promising. Adapt your depth and tone to business, technical, student, casual, and emotionally sensitive visitors.
+
+Use the approved portfolio context below as the factual source for WF-specific claims. Never present unknown portfolio facts as true. For pricing, availability, delivery guarantees, private project details, or anything not in the approved context, explain the limit clearly and offer a tailored enquiry. Do not invent rates, deadlines, clients, tool use, results, or personal details. Do not state or imply 100% uptime or any guarantee.
+
+For broad knowledge questions, answer directly and use clear reasoning. For current weather, breaking news, prices, laws, elections, medical, legal, financial, or safety-critical information, be transparent about freshness and uncertainty. When live weather or news is supplied in the conversation, use it carefully and name it as a live snapshot. Do not fabricate current events or citations.
 
 When explaining a creative or technical term, give a concise plain-language answer first and offer deeper detail if useful. For a project recommendation, name one or two relevant projects and explain why they match. If somebody is ready to hire, explain the relevant capability, ask for the project type, desired outcome, country/time zone if relevant, approximate timeline, and an estimated scope or budget only if they are comfortable sharing it. Keep data collection conversational and never request passwords, payment data, or sensitive personal information.
 
-If the visitor asks outside the design / portfolio scope, you may answer briefly if it is harmless, then gently bring the conversation back to WF when relevant. For legal, payment, privacy, or account matters, say that a human should handle it and direct them to the contact email. Respect copyrights: do not reproduce protected work or say WF owns third-party brands or films.
+Safety and respect: do not insult, harass, threaten, manipulate, shame, discriminate against, or mirror abusive language. If a visitor is angry, remain calm and set a respectful boundary. Refuse help that would enable wrongdoing, violence, self-harm, dangerous instructions, privacy invasion, fraud, or hateful abuse, then offer a safer alternative. For urgent self-harm or danger, encourage contacting local emergency services or a trusted person immediately.
 
-Formatting: use short paragraphs or compact bullets where they improve readability. No markdown tables. During a voice session, behave like an attentive person in a creative consultation: acknowledge the visitor’s idea, give a useful response in 1–3 naturally spoken sentences, and ask only one genuinely helpful follow-up question. Avoid headings, long lists, filler, or robotic phrases in voice replies. End naturally with one useful next question when it will help the visitor move forward.
+Respect copyrights: do not reproduce protected work or say WF owns third-party brands or films. For legal, payment, privacy, or account matters, say that a human should handle it and direct them to the contact email.
+
+Formatting: use short paragraphs or compact bullets where they improve readability. No markdown tables. During a voice session, behave like an attentive person in a creative consultation: acknowledge the visitor’s idea, give a useful response in 1–3 naturally spoken sentences, and ask only one genuinely helpful follow-up question. Avoid headings, long lists, filler, or robotic phrases in voice replies. A natural opening is: “Hey — how is your day going? How are you feeling? How can I help?” Never imply human feelings or a human identity. End naturally with one useful next question when it will help the visitor move forward.
 
 APPROVED PORTFOLIO CONTEXT:
 ${portfolioContext}`;
@@ -139,7 +145,7 @@ function requestIsAllowed(request) {
   return true;
 }
 
-async function readJson(request, maxBytes = 30_000) {
+async function readJson(request, maxBytes = 80_000) {
   let size = 0;
   let raw = "";
   for await (const chunk of request) {
@@ -165,9 +171,9 @@ async function readBytes(request, maxBytes = 10_000_000) {
 function cleanHistory(messages) {
   if (!Array.isArray(messages)) return [];
   return messages
-    .slice(-12)
+    .slice(-30)
     .filter((item) => item && (item.role === "user" || item.role === "assistant") && typeof item.content === "string")
-    .map((item) => ({ role: item.role, content: item.content.trim().slice(0, 2_000) }))
+    .map((item) => ({ role: item.role, content: item.content.trim().slice(0, 1_800) }))
     .filter((item) => item.content);
 }
 
@@ -203,6 +209,65 @@ function fallbackAnswer(message) {
     return "The portfolio is organised into Wings Projects, Motion Design Lab, and Visual Design Archive. A strong starting point is Through the Eyes of Football for motion work, The Dream Pursuit for trailer storytelling, or Global Race for poster design. What kind of work would you like to explore?";
   }
   return "I’m WF Assist, here to help you explore Pratyaksh Kumar’s motion-design and visual-design portfolio. I can recommend projects, explain creative services, or help you shape a project enquiry. What would you like to know?";
+}
+
+const weatherDescriptions = {
+  0: "clear skies", 1: "mainly clear", 2: "partly cloudy", 3: "overcast",
+  45: "fog", 48: "rime fog", 51: "light drizzle", 53: "drizzle", 55: "heavy drizzle",
+  61: "light rain", 63: "rain", 65: "heavy rain", 71: "light snow", 73: "snow", 75: "heavy snow",
+  80: "rain showers", 81: "rain showers", 82: "heavy rain showers", 95: "a thunderstorm", 96: "a thunderstorm with hail", 99: "a severe thunderstorm with hail",
+};
+
+async function fetchLiveWeather(city) {
+  const location = String(city || "").trim().slice(0, 100);
+  if (!location) throw new Error("Please tell me the city or region for the weather.");
+  let placeResponse;
+  try {
+    placeResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`, { signal: AbortSignal.timeout(8_000) });
+  } catch {
+    throw new Error("The live weather provider could not be reached right now. Please try again shortly.");
+  }
+  if (!placeResponse.ok) throw new Error("The weather location service is unavailable right now.");
+  const place = (await placeResponse.json()).results?.[0];
+  if (!place) throw new Error(`I could not find “${location}”. Please try a city and country name.`);
+  let forecastResponse;
+  try {
+    forecastResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day&timezone=auto`, { signal: AbortSignal.timeout(8_000) });
+  } catch {
+    throw new Error("The live weather provider could not be reached right now. Please try again shortly.");
+  }
+  if (!forecastResponse.ok) throw new Error("The live weather service is unavailable right now.");
+  const current = (await forecastResponse.json()).current;
+  return {
+    location: [place.name, place.admin1, place.country].filter(Boolean).join(", "),
+    temperature: current.temperature_2m,
+    apparentTemperature: current.apparent_temperature,
+    wind: current.wind_speed_10m,
+    condition: weatherDescriptions[current.weather_code] || "current conditions",
+    observedAt: current.time,
+    isDay: Boolean(current.is_day),
+  };
+}
+
+async function fetchLiveNews(query) {
+  const topic = String(query || "world news").trim().slice(0, 120) || "world news";
+  const endpoint = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(topic)}&mode=ArtList&format=json&maxrecords=4&sort=HybridRel`;
+  let newsResponse;
+  try {
+    newsResponse = await fetch(endpoint, { signal: AbortSignal.timeout(10_000) });
+  } catch {
+    throw new Error("The live news provider could not be reached right now. Please try again shortly.");
+  }
+  if (!newsResponse.ok) throw new Error("The live news service is unavailable right now.");
+  const payload = await newsResponse.json();
+  const articles = (payload.articles || []).slice(0, 4).map((article) => ({
+    title: String(article.title || "Untitled report").slice(0, 300),
+    source: String(article.domain || article.sourceCountry || "source").slice(0, 120),
+    url: String(article.url || ""),
+    seenAt: String(article.seendate || ""),
+  }));
+  if (!articles.length) throw new Error(`I could not find a current news snapshot for “${topic}”. Try a more specific topic.`);
+  return { topic, articles };
 }
 
 async function answerWithAi(history, voice) {
@@ -396,6 +461,32 @@ const server = createServer(async (request, response) => {
     response.setHeader("Access-Control-Allow-Headers", "Content-Type");
     response.setHeader("Access-Control-Max-Age", "86400");
     response.end();
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/wf-weather") {
+    if (origin && !originAllowed(origin)) return sendJson(response, 403, { error: "This website is not approved to use WF Assist." }, origin);
+    if (!requestIsAllowed(request)) return sendJson(response, 429, { error: "Please wait a moment before requesting another weather update." }, origin);
+    try {
+      const weather = await fetchLiveWeather(url.searchParams.get("city"));
+      sendJson(response, 200, weather, origin);
+    } catch (error) {
+      console.error("WF live weather failed:", error.message);
+      sendJson(response, 400, { error: error.message || "Weather is unavailable." }, origin);
+    }
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/wf-news") {
+    if (origin && !originAllowed(origin)) return sendJson(response, 403, { error: "This website is not approved to use WF Assist." }, origin);
+    if (!requestIsAllowed(request)) return sendJson(response, 429, { error: "Please wait a moment before requesting another news update." }, origin);
+    try {
+      const news = await fetchLiveNews(url.searchParams.get("topic"));
+      sendJson(response, 200, news, origin);
+    } catch (error) {
+      console.error("WF live news failed:", error.message);
+      sendJson(response, 400, { error: error.message || "News is unavailable." }, origin);
+    }
     return;
   }
 
