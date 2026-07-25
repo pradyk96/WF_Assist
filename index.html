@@ -33,12 +33,13 @@
             <button class="enter-button" id="openAssist" type="button"><span class="button-orb"><i></i></span><span><b>Begin a creative session</b><small>Talk with WF Assist</small></span><strong>↗</strong></button>
             <a class="text-link" href="https://wingsforever.pro/contact/" target="_blank" rel="noopener">Meet the designer <span>→</span></a>
           </div>
-          <div class="hero-meta">
-            <span><b>02D / 03D</b> Motion &amp; visual worlds</span>
-            <span><b>REMOTE</b> Global creative collaboration</span>
-            <span><b>LIVE</b> Voice portfolio guide</span>
-          </div>
+        <div class="hero-meta">
+          <span><b>02D / 03D</b> Motion &amp; visual worlds</span>
+          <span><b>REMOTE</b> Global creative collaboration</span>
+          <span><b>LIVE</b> Voice portfolio guide</span>
         </div>
+        <a class="scroll-cue" href="#manifesto" aria-label="Scroll to explore the studio"><span>SCROLL TO EXPLORE</span><i></i></a>
+      </div>
 
         <div class="scene-stage" id="sceneStage" aria-label="Interactive three-dimensional creative studio illustration">
           <div class="stage-glow"></div>
@@ -71,16 +72,38 @@
         <p>MOVE <i>✦</i> REVEAL <i>✦</i> INSPIRE <i>✦</i> MOVE <i>✦</i> REVEAL <i>✦</i> INSPIRE</p>
       </section>
 
+      <section class="kinetic-manifesto" id="manifesto" aria-labelledby="manifestoTitle">
+        <p class="section-index reveal">01 — THE VISUAL PHILOSOPHY</p>
+        <h2 id="manifestoTitle" class="manifesto-title" aria-label="Ideas should be felt before they are explained">
+          <span class="kinetic-line reveal" data-split>IDEAS SHOULD BE</span>
+          <span class="kinetic-line highlight reveal" data-split>FELT</span>
+          <span class="kinetic-line reveal" data-split>BEFORE THEY ARE</span>
+          <span class="kinetic-line outline reveal" data-split>EXPLAINED.</span>
+        </h2>
+        <div class="manifesto-note reveal"><i></i><p>Visual language is more than decoration. It is rhythm, energy, memory, and a reason for someone to pause.</p></div>
+        <div class="scroll-type-orbit" aria-hidden="true"><span>W</span><span>F</span><span>✦</span><span>M</span><span>O</span><span>V</span><span>E</span><span>✦</span></div>
+      </section>
+
+      <section class="story-scroll" aria-label="Creative process">
+        <div class="story-intro reveal"><p class="section-index">02 — FROM SPARK TO SCREEN</p><h2>One clear feeling.<br /><em>A thousand moving details.</em></h2><p>WF blends concept, composition, movement, and texture to give visual stories a point of view. Scroll through the studio to see how an idea gathers momentum.</p></div>
+        <div class="story-rail">
+          <article class="story-card story-card-one reveal scroll-3d" data-parallax="-0.09"><span class="card-number">01</span><div class="card-art art-spark"><i></i><i></i><i></i></div><h3>Find the pulse</h3><p>A concept starts with the emotion the audience should carry away.</p></article>
+          <article class="story-card story-card-two reveal scroll-3d" data-parallax="0.07"><span class="card-number">02</span><div class="card-art art-compose"><i></i><i></i><i></i><i></i></div><h3>Build the world</h3><p>Typography, space, color, and form become a visual system.</p></article>
+          <article class="story-card story-card-three reveal scroll-3d" data-parallax="-0.05"><span class="card-number">03</span><div class="card-art art-move"><i></i><i></i><i></i><i></i><i></i></div><h3>Give it motion</h3><p>Timing turns an image into an experience that feels alive.</p></article>
+        </div>
+      </section>
+
       <section class="capability-grid" aria-label="Creative areas">
-        <article><span>01</span><h2>Motion<br />Design</h2><p>2D/3D animation, cinematic title treatments, moving identity systems, and visual storytelling.</p><i>↗</i></article>
-        <article><span>02</span><h2>Visual<br />Design</h2><p>Poster worlds, illustration, composition, campaign assets, and graphic communication with purpose.</p><i>↗</i></article>
-        <article><span>03</span><h2>Creative<br />Direction</h2><p>A considered path from first spark to a visual language that connects emotionally and clearly.</p><i>↗</i></article>
+        <article class="reveal"><span>01</span><h2>Motion<br />Design</h2><p>2D/3D animation, cinematic title treatments, moving identity systems, and visual storytelling.</p><i>↗</i></article>
+        <article class="reveal"><span>02</span><h2>Visual<br />Design</h2><p>Poster worlds, illustration, composition, campaign assets, and graphic communication with purpose.</p><i>↗</i></article>
+        <article class="reveal"><span>03</span><h2>Creative<br />Direction</h2><p>A considered path from first spark to a visual language that connects emotionally and clearly.</p><i>↗</i></article>
       </section>
     </main>
 
     <footer><span>WF / WINGS FOREVER © 2026</span><span>DESIGNED FOR IDEAS IN MOTION</span></footer>
 
     <script src="scene.js"></script>
+    <script src="scroll-effects.js"></script>
     <script
       src="wf-assist-widget.js"
       data-wf-api="/api/wf-assist"
