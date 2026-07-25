@@ -1,0 +1,14 @@
+{
+  "name": "wf-telecom-voice-assist",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A browser-based voice and chat operator interface for WF Telecom.",
+  "scripts": {
+    "dev": "vite",
+    "preview": "vite preview",
+    "check": "node --check app.js"
+  },
+  "devDependencies": {
+    "vite": "^7.1.7"
+  }
+}

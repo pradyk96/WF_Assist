@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="WF Telecom voice assistant — support, sales, and first-line VoIP guidance."
+    />
+    <meta name="theme-color" content="#07111f" />
+    <title>WF Telecom · Voice Assist</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar" aria-label="WF Telecom assistant header">
+        <a class="brand" href="#top" aria-label="WF Telecom home">
+          <span class="brand-mark" aria-hidden="true">WF</span>
+          <span>WF <strong>TELECOM</strong></span>
+        </a>
+        <div class="connection-status" aria-label="Assistant is online">
+          <span class="status-dot"></span>
+          Operator online
+        </div>
+        <button class="icon-button" id="settingsButton" type="button" aria-label="Open assistant settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm8.7-3.5c0-.6-.1-1.1-.2-1.6l1.8-1.4-2-3.5-2.1.9a8.6 8.6 0 0 0-2.7-1.6L15 2.5h-4l-.3 2.3A8.7 8.7 0 0 0 8 6.4l-2.1-.9-2 3.5 1.8 1.4a8.2 8.2 0 0 0 0 3.2L3.9 15l2 3.5 2.1-.9c.8.7 1.7 1.2 2.7 1.6l.3 2.3h4l.3-2.3c1-.4 1.9-.9 2.7-1.6l2.1.9 2-3.5-1.8-1.4c.1-.5.2-1 .2-1.6Z" /></svg>
+        </button>
+      </header>
+
+      <section class="hero" id="top" aria-labelledby="pageTitle">
+        <div class="hero-copy">
+          <p class="eyebrow">YOUR VIRTUAL TELECOM OPERATOR</p>
+          <h1 id="pageTitle">Clear answers.<br /><em>Real support.</em></h1>
+          <p class="hero-intro">Ask WF about VoIP, DID numbers, Cloud PBX, voice quality, porting, SMS, or a tailored business quote.</p>
+          <div class="trust-row" aria-label="Assistant capabilities">
+            <span>Voice enabled</span><span>•</span><span>Privacy-first</span><span>•</span><span>Human handoff available</span>
+          </div>
+        </div>
+
+        <section class="voice-card" aria-labelledby="voiceTitle">
+          <div class="voice-card-top">
+            <div class="operator-identity">
+              <div class="operator-orb" aria-hidden="true"><span></span><span></span><span></span></div>
+              <div>
+                <p class="live-label"><span class="live-dot"></span> LIVE ASSISTANT</p>
+                <h2 id="voiceTitle">WF Voice Assist</h2>
+              </div>
+            </div>
+            <button class="speaker-button is-on" id="speakerButton" type="button" aria-label="Turn voice replies off" aria-pressed="true">
+              <svg class="speaker-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3a4.5 4.5 0 0 0-2.2-3.9v7.8a4.5 4.5 0 0 0 2.2-3.9Zm0-8.5v2.1a7 7 0 0 1 0 12.8v2.1a9 9 0 0 0 0-17.9Z" /></svg>
+              <svg class="speaker-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm15.7 1.3-1.4-1.4-2.3 2.3-2.3-2.3-1.4 1.4 2.3 2.3-2.3 2.3 1.4 1.4 2.3-2.3 2.3 2.3 1.4-1.4-2.3-2.3 2.3-2.3Z" /></svg>
+            </button>
+          </div>
+
+          <div class="listening-visual" id="listeningVisual" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <p class="voice-state" id="voiceState" role="status">Ready when you are</p>
+          <button class="mic-button" id="micButton" type="button" aria-label="Start speaking to WF Telecom" aria-describedby="voiceHint">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21H8v2h8v-2h-3v-3.1A7 7 0 0 0 19 11h-2Z" /></svg>
+            <span id="micButtonLabel">Speak to WF</span>
+          </button>
+          <p class="voice-hint" id="voiceHint">Tap the microphone, then tell us how we can help.</p>
+        </section>
+      </section>
+
+      <section class="assistant-workspace" aria-label="Conversation with WF Telecom">
+        <div class="conversation-pane">
+          <div class="pane-heading">
+            <div>
+              <p class="eyebrow">CONVERSATION</p>
+              <h2>How can we help today?</h2>
+            </div>
+            <button class="clear-button" id="clearButton" type="button">Start over</button>
+          </div>
+
+          <div class="messages" id="messages" aria-live="polite" aria-label="Assistant conversation">
+            <article class="message assistant-message">
+              <span class="message-avatar" aria-hidden="true">WF</span>
+              <div class="message-content">
+                <p>Hello and welcome to WF Telecom. How may I assist you today?</p>
+                <time>Just now</time>
+              </div>
+            </article>
+          </div>
+
+          <div class="quick-prompts" aria-label="Suggested questions">
+            <button type="button" data-prompt="I need a VoIP solution for my business">Business VoIP</button>
+            <button type="button" data-prompt="How does SIP trunking work?">SIP trunking</button>
+            <button type="button" data-prompt="I have poor call quality">Call quality help</button>
+            <button type="button" data-prompt="I would like to port my number">Port a number</button>
+          </div>
+
+          <form class="composer" id="composer">
+            <label class="sr-only" for="messageInput">Type your message</label>
+            <input id="messageInput" name="message" type="text" autocomplete="off" placeholder="Type your question or tap the microphone…" maxlength="800" />
+            <button class="send-button" type="submit" aria-label="Send message">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 9-18 9 3-7 8-2-8-2-3-7Z" /></svg>
+            </button>
+          </form>
+          <p class="privacy-note">Do not share passwords, payment details, or other sensitive account information here.</p>
+        </div>
+
+        <aside class="side-pane" aria-label="WF Telecom services">
+          <section class="service-card">
+            <p class="eyebrow">WHAT I CAN HELP WITH</p>
+            <h2>Built for your business communications.</h2>
+            <ul class="service-list">
+              <li><span class="service-icon phone-icon" aria-hidden="true"></span><span><strong>Voice &amp; connectivity</strong><small>VoIP, SIP trunks, DID numbers, international calling</small></span></li>
+              <li><span class="service-icon route-icon" aria-hidden="true"></span><span><strong>Reliable routing</strong><small>Call routing, CLI management, quality metrics</small></span></li>
+              <li><span class="service-icon cloud-icon" aria-hidden="true"></span><span><strong>Flexible platforms</strong><small>Cloud PBX, SMS services, API integration</small></span></li>
+              <li><span class="service-icon shield-icon" aria-hidden="true"></span><span><strong>Secure operations</strong><small>Fraud prevention and number porting support</small></span></li>
+            </ul>
+          </section>
+          <section class="handoff-card">
+            <div class="handoff-icon" aria-hidden="true">↗</div>
+            <div>
+              <h3>Need a specialist?</h3>
+              <p>For account access, confirmed outages, legal matters, or custom implementation, our team can take over.</p>
+            </div>
+            <button id="specialistButton" type="button">Connect to support</button>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <dialog class="settings-dialog" id="settingsDialog" aria-labelledby="settingsTitle">
+      <form method="dialog">
+        <div class="dialog-title-row">
+          <div><p class="eyebrow">PREFERENCES</p><h2 id="settingsTitle">Assistant settings</h2></div>
+          <button class="dialog-close" value="close" aria-label="Close settings">×</button>
+        </div>
+        <label class="setting-row" for="autoSpeak">
+          <span><strong>Voice replies</strong><small>Read WF’s answers aloud when your browser supports it.</small></span>
+          <input id="autoSpeak" type="checkbox" role="switch" checked />
+        </label>
+        <p class="settings-note">Voice recognition is processed by your browser. It may not be available in every browser or device.</p>
+      </form>
+    </dialog>
+
+    <dialog class="lead-dialog" id="leadDialog" aria-labelledby="leadTitle">
+      <form id="leadForm">
+        <div class="dialog-title-row">
+          <div><p class="eyebrow">HUMAN SUPPORT</p><h2 id="leadTitle">Connect to a specialist</h2></div>
+          <button class="dialog-close" type="button" id="leadClose" aria-label="Close support form">×</button>
+        </div>
+        <p class="dialog-intro">Leave your details and the WF team can follow up about your request. Please do not include account passwords or payment data.</p>
+        <div class="form-grid">
+          <label>Name<input name="name" autocomplete="name" required /></label>
+          <label>Work email<input name="email" type="email" autocomplete="email" required /></label>
+          <label>Company<input name="company" autocomplete="organization" /></label>
+          <label>Country<input name="country" autocomplete="country-name" /></label>
+          <label class="form-full">How can we help?<textarea name="need" rows="3" placeholder="Service, issue, or approximate monthly traffic"></textarea></label>
+        </div>
+        <button class="form-submit" type="submit">Request specialist support <span>→</span></button>
+        <p class="form-status" id="formStatus" role="status"></p>
+      </form>
+    </dialog>
+
+    <noscript><p class="noscript">JavaScript is needed to use WF Voice Assist.</p></noscript>
+    <script src="app.js"></script>
+  </body>
+</html>
