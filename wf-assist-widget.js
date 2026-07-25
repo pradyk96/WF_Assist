@@ -414,14 +414,6 @@
     ui.stageMic.setAttribute("aria-label", active ? "Stop listening" : "Start voice chat");
   }
 
-  async function requestMicrophonePermission() {
-    if (!navigator.mediaDevices?.getUserMedia) throw new Error("This browser cannot access the microphone. Please use a current version of Chrome, Edge, Safari, or type your message.");
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-    });
-    stream.getTracks().forEach((track) => track.stop());
-  }
-
   function getRecognition() {
     if (state.recognition) return state.recognition;
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -448,11 +440,12 @@
     recognition.onerror = (event) => {
       const messages = {
         "not-allowed": "Microphone permission was not granted. Allow microphone access in your browser settings, then try again.",
-        "service-not-allowed": "This browser’s speech service is unavailable. WF Assist can use secure transcription when the AI voice service is configured.",
+        "service-not-allowed": "This browser’s speech service is unavailable. On the next try, WF Assist will use secure transcription when the AI voice service is configured.",
+        network: "Browser speech recognition could not reach its service. On the next try, WF Assist will use secure transcription when available.",
         "audio-capture": "No microphone was found. Check your device settings and try again.",
         "no-speech": "I didn’t hear anything. Please try again a little closer to the microphone.",
       };
-      if (event.error === "service-not-allowed") state.preferSecureTranscription = true;
+      if (event.error === "service-not-allowed" || event.error === "network") state.preferSecureTranscription = true;
       if (event.error !== "aborted") showStatus(messages[event.error] || "Voice input had a problem. Please try again.");
     };
     recognition.onend = () => {
@@ -503,28 +496,31 @@
     recorder.start(250);
   }
 
-  async function toggleListening() {
+  function toggleListening() {
     if (state.isListening) {
       if (state.mediaRecorder?.state === "recording") state.mediaRecorder.stop();
       else state.recognition?.stop();
       return;
     }
-    try {
-      // Prompt for microphone access up front. This produces a clear browser permission flow
-      // instead of a vague speech-recognition failure.
-      await requestMicrophonePermission();
-      if (recognitionSupported() && !state.preferSecureTranscription) {
-        const recognition = getRecognition();
-        recognition.start();
-      } else {
-        await startSecureRecording();
+
+    // SpeechRecognition must start directly inside the button click. Awaiting a permission
+    // request first can remove the browser's user-gesture permission and cause avoidable
+    // "not allowed" / input errors on local installations.
+    if (recognitionSupported() && !state.preferSecureTranscription) {
+      try {
+        getRecognition().start();
+      } catch (error) {
+        showStatus(error.message || "I could not start browser voice input. Please try again.");
       }
-    } catch (error) {
+      return;
+    }
+
+    startSecureRecording().catch((error) => {
       const message = error.name === "NotAllowedError"
         ? "Microphone permission is blocked. Allow it in your browser’s site settings, then tap the microphone again."
         : (error.message || "I could not start the microphone. Please try again.");
       showStatus(message);
-    }
+    });
   }
   function resetConversation() {
     window.speechSynthesis?.cancel();

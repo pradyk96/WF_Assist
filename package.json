@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node server.mjs",
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check wf-assist-widget.js"
+    "check": "node --check server.mjs && node --check wf-assist-widget.js && node --check scene.js"
   },
   "engines": {
     "node": ">=20"

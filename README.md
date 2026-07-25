@@ -131,7 +131,8 @@ Update `portfolioContext` in `server.mjs` whenever portfolio pages, services, co
 
 - `wf-assist-widget.js` — self-contained Shadow DOM widget; this is the file embedded on the website.
 - `server.mjs` — static server, protected AI endpoint, rate limiting, CORS allow-list, portfolio instructions, and optional lead webhook.
-- `index.html` / `styles.css` — local preview page for testing the widget.
+- `index.html` / `styles.css` — immersive local preview landing page with responsive 3D-inspired studio UI.
+- `scene.js` — dependency-free canvas particle field and pointer-reactive 3D-parallax motion for the local preview.
 
 ## Verify the code
 

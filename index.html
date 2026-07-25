@@ -3,42 +3,91 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="WF Assist — voice-enabled portfolio companion for Wings Forever." />
-    <meta name="theme-color" content="#07111f" />
-    <title>WF Assist · Portfolio Voice Widget</title>
+    <meta name="description" content="WF Assist — an immersive, voice-enabled creative portfolio experience for Pratyaksh Kumar." />
+    <meta name="theme-color" content="#000000" />
+    <title>WF Assist · Immersive Creative Studio</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main>
-      <nav class="topbar" aria-label="WF Assist preview">
-        <a class="brand" href="https://wingsforever.pro/" target="_blank" rel="noopener"><span class="mark">WF</span><span>WF <b>ASSIST</b></span></a>
-        <span class="preview-label">WIDGET PREVIEW</span>
-      </nav>
+    <canvas id="worldCanvas" aria-hidden="true"></canvas>
+    <div class="film-grain" aria-hidden="true"></div>
+    <div class="aurora aurora-one" aria-hidden="true"></div>
+    <div class="aurora aurora-two" aria-hidden="true"></div>
 
-      <section class="hero">
-        <p class="eyebrow">THE PORTFOLIO CONVERSATION, REIMAGINED</p>
-        <h1>A creative guide that<br /><em>speaks your visitor’s language.</em></h1>
-        <p class="intro">WF Assist is a voice-enabled portfolio companion for Wings Forever. It helps visitors discover motion work, understand visual-design services, find relevant projects, and begin a thoughtful project enquiry.</p>
-        <div class="actions">
-          <button class="primary" id="openAssist" type="button">Try WF Assist <span>↗</span></button>
-          <a class="secondary" href="https://wingsforever.pro/?post_type=awaiken-project" target="_blank" rel="noopener">Explore Wings Projects</a>
+    <main class="experience-shell">
+      <header class="site-header">
+        <a class="brand-lockup" href="https://wingsforever.pro/" target="_blank" rel="noopener" aria-label="Wings Forever portfolio">
+          <img src="https://wingsforever.pro/wp-content/uploads/2026/07/WF-final-logo-branding-animation-with-trannsperacy.gif" alt="WF" />
+          <span><b>WINGS FOREVER</b><small>CREATIVE DIMENSION</small></span>
+        </a>
+        <div class="header-status"><i></i><span>STUDIO ONLINE</span><em>VILNIUS · LT</em></div>
+        <a class="header-link" href="https://wingsforever.pro/?post_type=awaiken-project" target="_blank" rel="noopener">Explore work <span>↗</span></a>
+      </header>
+
+      <section class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow"><i></i> PRATYAKSH KUMAR · INDEPENDENT VISUAL DESIGNER</p>
+          <h1>Enter the<br /><em>motion dimension.</em></h1>
+          <p class="intro">A living studio for cinematic motion, visual design, and ideas that need a world of their own. Meet WF Assist—your creative guide through the work, the process, and what comes next.</p>
+          <div class="hero-actions">
+            <button class="enter-button" id="openAssist" type="button"><span class="button-orb"><i></i></span><span><b>Begin a creative session</b><small>Talk with WF Assist</small></span><strong>↗</strong></button>
+            <a class="text-link" href="https://wingsforever.pro/contact/" target="_blank" rel="noopener">Meet the designer <span>→</span></a>
+          </div>
+          <div class="hero-meta">
+            <span><b>02D / 03D</b> Motion &amp; visual worlds</span>
+            <span><b>REMOTE</b> Global creative collaboration</span>
+            <span><b>LIVE</b> Voice portfolio guide</span>
+          </div>
+        </div>
+
+        <div class="scene-stage" id="sceneStage" aria-label="Interactive three-dimensional creative studio illustration">
+          <div class="stage-glow"></div>
+          <div class="world-floor"></div>
+          <div class="world-grid"></div>
+          <div class="orbit-line orbit-a"></div>
+          <div class="orbit-line orbit-b"></div>
+          <div class="orbit-line orbit-c"></div>
+
+          <div class="design-portal">
+            <div class="portal-shell"><span></span><span></span><span></span></div>
+            <div class="portal-core"><div class="core-light"></div></div>
+          </div>
+
+          <div class="creative-mascot" aria-hidden="true">
+            <div class="mascot-shadow"></div>
+            <div class="mascot-body"><div class="mascot-jacket"></div></div>
+            <div class="mascot-head"><div class="mascot-ear left"></div><div class="mascot-ear right"></div><div class="mascot-visor"><i></i><i></i><i></i></div><div class="mascot-smile"></div></div>
+            <div class="mascot-arm arm-left"></div><div class="mascot-arm arm-right"></div>
+          </div>
+
+          <article class="floating-widget widget-motion"><span class="widget-tag">MOTION</span><div class="mini-frames"><i></i><i></i><i></i><i></i></div><b>Frame by frame</b><small>Story in motion</small></article>
+          <article class="floating-widget widget-3d"><span class="widget-tag">3D LAB</span><div class="mini-cube"><i></i><i></i><i></i></div><b>Spatial ideas</b><small>Depth · light · form</small></article>
+          <article class="floating-widget widget-color"><span class="widget-tag">VISUAL DNA</span><div class="color-orbit"><i></i><i></i><i></i></div><b>Make it felt</b><small>Color with intention</small></article>
+          <p class="scene-caption"><i></i> INTERACTIVE CREATIVE FIELD <span>Move your cursor</span></p>
         </div>
       </section>
 
-      <section class="feature-grid" aria-label="Widget capabilities">
-        <article><span class="feature-number">01</span><h2>Portfolio-aware</h2><p>Guides visitors through motion work, graphic design, visual experiments, project stories, and creative process.</p></article>
-        <article><span class="feature-number">02</span><h2>Voice + chat</h2><p>Visitors can type, speak, and hear answers back when their browser supports voice features.</p></article>
-        <article><span class="feature-number">03</span><h2>Lead-ready</h2><p>Turns an interested conversation into a considered creative brief—without pressure or invented promises.</p></article>
+      <section class="studio-strip" aria-label="Wings Forever capabilities">
+        <p>MOVE <i>✦</i> REVEAL <i>✦</i> INSPIRE <i>✦</i> MOVE <i>✦</i> REVEAL <i>✦</i> INSPIRE</p>
+      </section>
+
+      <section class="capability-grid" aria-label="Creative areas">
+        <article><span>01</span><h2>Motion<br />Design</h2><p>2D/3D animation, cinematic title treatments, moving identity systems, and visual storytelling.</p><i>↗</i></article>
+        <article><span>02</span><h2>Visual<br />Design</h2><p>Poster worlds, illustration, composition, campaign assets, and graphic communication with purpose.</p><i>↗</i></article>
+        <article><span>03</span><h2>Creative<br />Direction</h2><p>A considered path from first spark to a visual language that connects emotionally and clearly.</p><i>↗</i></article>
       </section>
     </main>
 
-    <footer>WF Assist · Built for the Wings Forever creative portfolio</footer>
+    <footer><span>WF / WINGS FOREVER © 2026</span><span>DESIGNED FOR IDEAS IN MOTION</span></footer>
 
-    <!-- This is the same one-line widget embed used on a website. -->
+    <script src="scene.js"></script>
     <script
       src="wf-assist-widget.js"
       data-wf-api="/api/wf-assist"
       data-wf-lead-api="/api/wf-lead"
+      data-wf-transcribe-api="/api/wf-transcribe"
+      data-wf-speech-api="/api/wf-speech"
+      data-wf-logo="https://wingsforever.pro/wp-content/uploads/2026/07/WF-final-logo-branding-animation-with-trannsperacy.gif"
       data-wf-title="WF Assist"
       data-wf-site-url="https://wingsforever.pro/"
     ></script>
