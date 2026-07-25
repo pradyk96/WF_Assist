@@ -64,6 +64,9 @@ A real GPT-level widget needs a secure server because its AI key must remain pri
   src="https://assist.your-domain.com/wf-assist-widget.js"
   data-wf-api="https://assist.your-domain.com/api/wf-assist"
   data-wf-lead-api="https://assist.your-domain.com/api/wf-lead"
+  data-wf-transcribe-api="https://assist.your-domain.com/api/wf-transcribe"
+  data-wf-speech-api="https://assist.your-domain.com/api/wf-speech"
+  data-wf-logo="https://wingsforever.pro/path-to-your/WF-final-logo-branding-animation.gif"
   data-wf-title="WF Assist"
   data-wf-site-url="https://wingsforever.pro/"
 ></script>
@@ -74,8 +77,9 @@ A real GPT-level widget needs a secure server because its AI key must remain pri
 1. Deploy this app first and set its production environment variables (below).
 2. In WordPress, add the script tag **once** using the theme’s footer-code field, a trusted header/footer injection plugin, or an Elementor/WordPress custom-code location set to **Footer**.
 3. Replace `https://assist.your-domain.com` with the deployed assistant domain.
-4. Clear any page/cache/CDN cache and test on desktop and mobile.
-5. In the deployed app, set `ALLOWED_ORIGINS` to your real website origins. Do not use a wildcard in production.
+4. Replace `data-wf-logo` with the actual WordPress Media Library URL for the transparent animated WF GIF. It is rendered as an image, so an animated GIF plays automatically without extra JavaScript.
+5. Clear any page/cache/CDN cache and test on desktop and mobile.
+6. In the deployed app, set `ALLOWED_ORIGINS` to your real website origins. Do not use a wildcard in production.
 
 Do not paste `wf-assist-widget.js` into a page editor that strips `<script>` tags. The JavaScript file must be served from a trusted HTTPS domain.
 
@@ -83,8 +87,11 @@ Do not paste `wf-assist-widget.js` into a page editor that strips `<script>` tag
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | Yes for live AI | Secret server-side key used to call the Responses API. Without it, the safe portfolio-guide fallback runs. |
+| `OPENAI_API_KEY` | Yes for live AI, secure transcription, and natural AI speech | Secret server-side key. Without it, the portfolio-guide and browser-voice fallbacks run. |
 | `OPENAI_MODEL` | No | AI model name. Defaults to `gpt-4.1-mini`; set this to a model enabled on your account. |
+| `OPENAI_TRANSCRIPTION_MODEL` | No | Speech-to-text model for secure microphone fallback. Defaults to `gpt-4o-mini-transcribe`; use a transcription model enabled on your account. |
+| `OPENAI_TTS_MODEL` | No | Natural text-to-speech model. Defaults to `gpt-4o-mini-tts`; use a TTS model enabled on your account. |
+| `OPENAI_TTS_VOICE` | No | Voice name supported by the selected TTS model. Defaults to `alloy`; choose a natural voice available to your account. |
 | `ALLOWED_ORIGINS` | Yes in production | Comma-separated origins allowed to call the API, e.g. `https://wingsforever.pro,https://www.wingsforever.pro`. |
 | `LEAD_WEBHOOK_URL` | Yes for automatic lead delivery | HTTPS webhook for your CRM, Zapier/Make scenario, ticket tool, or secure server endpoint. Without it, WF Assist transparently asks visitors to email instead of falsely claiming an enquiry was sent. |
 | `PORT` | No | Server port; defaults to `5173`. |

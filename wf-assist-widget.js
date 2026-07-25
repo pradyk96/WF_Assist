@@ -15,9 +15,14 @@
   const scriptUrl = currentScript?.src ? new URL(currentScript.src, window.location.href) : new URL(window.location.href);
   const localApi = new URL("/api/wf-assist", scriptUrl.origin).href;
   const localLeadApi = new URL("/api/wf-lead", scriptUrl.origin).href;
+  const localTranscriptionApi = new URL("/api/wf-transcribe", scriptUrl.origin).href;
+  const localSpeechApi = new URL("/api/wf-speech", scriptUrl.origin).href;
   const config = {
     api: currentScript?.dataset.wfApi || localApi,
     leadApi: currentScript?.dataset.wfLeadApi || localLeadApi,
+    transcribeApi: currentScript?.dataset.wfTranscribeApi || localTranscriptionApi,
+    speechApi: currentScript?.dataset.wfSpeechApi || localSpeechApi,
+    logo: currentScript?.dataset.wfLogo || "https://wingsforever.pro/wp-content/uploads/2026/05/new-WF-2048x2048.png",
     title: currentScript?.dataset.wfTitle || "WF Assist",
     siteUrl: currentScript?.dataset.wfSiteUrl || "https://wingsforever.pro/",
     autoSpeak: currentScript?.dataset.wfAutoSpeak !== "false",
@@ -49,12 +54,12 @@
       .wf-panel { position:absolute; right:0; bottom:0; width:min(1120px, calc(100vw - 46px)); height:min(710px, calc(100vh - 46px)); min-height:548px; display:grid; grid-template-rows:auto minmax(0,1fr); overflow:hidden; visibility:hidden; opacity:0; transform:translateY(22px) scale(.965); pointer-events:none; border:1px solid rgba(177,218,249,.23); border-radius:25px; background:linear-gradient(145deg, #0e2741 0%, #071629 53%, #091526 100%); box-shadow:0 32px 110px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.07); transition:visibility .25s, opacity .32s ease, transform .68s cubic-bezier(.19,.95,.27,1.25); }
       .wf-panel::before { position:absolute; z-index:0; inset:0; content:""; pointer-events:none; opacity:.55; background:radial-gradient(circle at 15% 15%, rgba(84,225,207,.14), transparent 31%), radial-gradient(circle at 88% 86%, rgba(127,91,242,.13), transparent 30%); }.wf-panel::after { position:absolute; z-index:0; inset:0; content:""; pointer-events:none; opacity:.24; background-image:linear-gradient(rgba(175,232,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(175,232,255,.05) 1px, transparent 1px); background-size:35px 35px; mask-image:linear-gradient(135deg, black, transparent 60%); }
       .wf-wrap.is-open .wf-panel { visibility:visible; opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
-      .wf-header, .wf-workspace { position:relative; z-index:1; }.wf-header { display:flex; align-items:center; gap:11px; min-height:76px; padding:14px 20px; border-bottom:1px solid var(--wf-line); background:rgba(7,22,38,.36); backdrop-filter:blur(16px); }.wf-avatar { position:relative; width:42px; height:42px; display:grid; place-items:center; overflow:hidden; flex:0 0 auto; color:#042d31; border:1px solid rgba(207,255,246,.76); border-radius:13px; background:radial-gradient(circle at 36% 29%, #d0fff6, #63dbc8 53%, #297c87); box-shadow:0 0 26px rgba(80,229,209,.2); font-size:10px; font-weight:900; letter-spacing:.07em; }.wf-avatar::before { position:absolute; inset:5px; content:""; border:1px solid rgba(1,71,77,.3); border-radius:9px; }.wf-heading { flex:1; min-width:0; }.wf-heading strong { display:block; color:#f4f8ff; font-size:14px; letter-spacing:-.025em; }.wf-heading span { display:flex; align-items:center; gap:6px; margin-top:3px; color:#96adc4; font-size:10px; }.wf-live-dot { width:6px; height:6px; display:inline-block; border-radius:50%; background:var(--wf-teal); box-shadow:0 0 0 4px rgba(98,230,208,.1), 0 0 12px rgba(98,230,208,.7); animation:wf-live 1.8s ease-in-out infinite; }@keyframes wf-live { 50% { transform:scale(.65); box-shadow:0 0 0 7px rgba(98,230,208,0); } }
+      .wf-header, .wf-workspace { position:relative; z-index:1; }.wf-header { display:flex; align-items:center; gap:11px; min-height:76px; padding:14px 20px; border-bottom:1px solid rgba(255,255,255,.1); background:#000000; backdrop-filter:blur(16px); }.wf-avatar { position:relative; width:46px; height:46px; display:grid; place-items:center; overflow:visible; flex:0 0 auto; color:#042d31; background:transparent; font-size:10px; font-weight:900; letter-spacing:.07em; }.wf-avatar::before { display:none; }.wf-brand-logo { position:relative; z-index:1; width:100%; height:100%; object-fit:contain; padding:0; filter:drop-shadow(0 2px 5px rgba(0,0,0,.28)); animation:wf-logo-float 4s ease-in-out infinite; }@keyframes wf-logo-float { 50% { transform:scale(1.07) rotate(3deg); filter:drop-shadow(0 3px 9px rgba(91,235,218,.4)); } }.wf-heading { flex:1; min-width:0; }.wf-heading strong { display:block; color:#f4f8ff; font-size:14px; letter-spacing:-.025em; }.wf-heading span { display:flex; align-items:center; gap:6px; margin-top:3px; color:#96adc4; font-size:10px; }.wf-live-dot { width:6px; height:6px; display:inline-block; border-radius:50%; background:var(--wf-teal); box-shadow:0 0 0 4px rgba(98,230,208,.1), 0 0 12px rgba(98,230,208,.7); animation:wf-live 1.8s ease-in-out infinite; }@keyframes wf-live { 50% { transform:scale(.65); box-shadow:0 0 0 7px rgba(98,230,208,0); } }
       .wf-icon-button { width:34px; height:34px; display:grid; place-items:center; padding:0; color:#a8bdd0; border:1px solid rgba(164,212,246,.1); border-radius:9px; background:rgba(29,55,80,.2); transition:color .25s ease, border-color .25s ease, background .25s ease, transform .35s cubic-bezier(.2,.9,.25,1.4); }.wf-icon-button:hover { color:var(--wf-bright); border-color:rgba(112,236,218,.45); background:rgba(69,176,168,.12); transform:translateY(-2px); }.wf-icon-button svg { width:17px; height:17px; fill:currentColor; }.wf-speaker-off { display:none; }.wf-icon-button.is-muted .wf-speaker-on { display:none; }.wf-icon-button.is-muted .wf-speaker-off { display:block; }
       .wf-workspace { min-height:0; display:grid; grid-template-columns:minmax(360px,.94fr) minmax(380px,1.06fr); }.wf-stage { position:relative; min-height:0; display:grid; grid-template-rows:auto minmax(0,1fr) auto; overflow:hidden; isolation:isolate; padding:21px 23px 20px; border-right:1px solid var(--wf-line); background:linear-gradient(145deg, rgba(18,51,76,.7), rgba(5,19,34,.74)); }.wf-stage::before { position:absolute; z-index:-2; inset:0; content:""; background:radial-gradient(circle at 50% 43%, rgba(68,222,202,.21), transparent 19%), radial-gradient(circle at 28% 80%, rgba(141,106,253,.14), transparent 35%); transition:background .35s ease-out; }.wf-stage::after { position:absolute; z-index:-1; inset:0; content:""; opacity:.27; pointer-events:none; background-image:radial-gradient(rgba(164,245,239,.7) .65px, transparent .9px); background-size:22px 22px; mask-image:radial-gradient(circle at center, black, transparent 72%); }
       .wf-stage-top, .wf-stage-bottom { display:flex; align-items:center; justify-content:space-between; gap:11px; }.wf-stage-label { margin:0; color:var(--wf-teal); font-family:ui-monospace, SFMono-Regular, Consolas, monospace; font-size:9px; font-weight:700; letter-spacing:.16em; }.wf-stage-latency { display:flex; align-items:center; gap:6px; color:#9db2c6; font-family:ui-monospace, SFMono-Regular, Consolas, monospace; font-size:9px; }.wf-stage-latency i { width:5px; height:5px; display:block; border-radius:50%; background:#76f5df; box-shadow:0 0 10px #76f5df; }
       .wf-visual-field { position:relative; display:grid; place-items:center; min-height:305px; }.wf-orbit { position:absolute; width:244px; height:244px; border:1px solid rgba(143,251,236,.17); border-radius:50%; transform:translate3d(var(--pointer-x), var(--pointer-y), 0); transition:transform .5s cubic-bezier(.22,.9,.2,1.2); }.wf-orbit::after { position:absolute; top:50%; left:-4px; width:7px; height:7px; content:""; border-radius:50%; background:#b5fff5; box-shadow:0 0 12px #58e7d4; }.wf-orbit-one { animation:wf-orbit 14s linear infinite; }.wf-orbit-two { width:337px; height:337px; border-color:rgba(169,145,255,.13); animation:wf-orbit 21s linear infinite reverse; }.wf-orbit-two::after { top:29%; left:auto; right:-3px; background:#c5b8ff; box-shadow:0 0 12px #9d87ff; }.wf-orbit-three { width:425px; height:425px; border-style:dashed; border-color:rgba(120,228,255,.1); animation:wf-orbit 35s linear infinite; }.wf-orbit-three::after { display:none; }@keyframes wf-orbit { to { rotate:360deg; } }
-      .wf-core-shadow { position:absolute; width:155px; height:25px; top:calc(50% + 107px); border-radius:50%; background:rgba(19,225,202,.18); filter:blur(13px); transform:translateX(var(--pointer-x)); transition:transform .5s ease; }.wf-core { position:relative; width:158px; height:158px; display:grid; place-items:center; overflow:hidden; border:1px solid rgba(195,255,248,.74); border-radius:47% 53% 51% 49% / 50% 44% 56% 50%; background:radial-gradient(circle at 35% 27%, #e0fff8 0%, #86f1df 18%, #258c9a 51%, #112f57 100%); box-shadow:0 0 0 13px rgba(92,230,209,.06), 0 0 65px rgba(61,230,209,.38), inset 15px 17px 27px rgba(255,255,255,.2), inset -18px -17px 28px rgba(5,22,61,.46); transform:translate3d(var(--pointer-x), var(--pointer-y), 0) rotate(-7deg); transition:transform .6s cubic-bezier(.18,.96,.25,1.35), border-radius .6s ease, box-shadow .5s ease; animation:wf-breathe 5s ease-in-out infinite; }.wf-core::before { position:absolute; width:190px; height:65px; content:""; background:linear-gradient(105deg, transparent 30%, rgba(255,255,255,.75) 47%, transparent 61%); transform:rotate(-39deg) translateY(-52px); animation:wf-sheen 5s ease-in-out infinite; }.wf-core::after { position:absolute; inset:12px; content:""; border:1px solid rgba(227,255,252,.42); border-radius:inherit; }.wf-core-word { position:relative; z-index:1; color:#043b48; text-shadow:0 1px rgba(255,255,255,.38); font-size:26px; font-weight:900; letter-spacing:-.1em; transform:translateX(-2px); }.wf-core-word small { margin-left:3px; font-size:8px; letter-spacing:.08em; vertical-align:middle; }.wf-stage.is-listening .wf-core { border-radius:50%; box-shadow:0 0 0 17px rgba(92,230,209,.1), 0 0 95px rgba(61,230,209,.66), inset 15px 17px 27px rgba(255,255,255,.2), inset -18px -17px 28px rgba(5,22,61,.46); animation:wf-listen .75s ease-in-out infinite alternate; }.wf-stage.is-listening .wf-orbit { border-color:rgba(150,255,241,.5); animation-duration:4s; }.wf-stage.is-speaking .wf-core { border-radius:42% 58% 46% 54% / 55% 42% 58% 45%; animation:wf-speak 1.25s ease-in-out infinite; }.wf-stage.is-speaking .wf-orbit { border-color:rgba(177,157,255,.43); }@keyframes wf-breathe { 0%,100% { scale:.97; } 50% { scale:1.03; } }@keyframes wf-listen { from { scale:.96; } to { scale:1.1; } }@keyframes wf-speak { 0%,100% { scale:1; rotate:-5deg; } 50% { scale:1.075; rotate:4deg; } }@keyframes wf-sheen { 0%, 25% { transform:rotate(-39deg) translateY(-70px); opacity:0; } 48%, 65% { opacity:.85; } 84%,100% { transform:rotate(-39deg) translateY(125px); opacity:0; } }
+      .wf-core-shadow { position:absolute; width:155px; height:25px; top:calc(50% + 107px); border-radius:50%; background:rgba(19,225,202,.18); filter:blur(13px); transform:translateX(var(--pointer-x)); transition:transform .5s ease; }.wf-core { position:relative; width:158px; height:158px; display:grid; place-items:center; overflow:hidden; border:1px solid rgba(195,255,248,.74); border-radius:47% 53% 51% 49% / 50% 44% 56% 50%; background:radial-gradient(circle at 35% 27%, #e0fff8 0%, #86f1df 18%, #258c9a 51%, #112f57 100%); box-shadow:0 0 0 13px rgba(92,230,209,.06), 0 0 65px rgba(61,230,209,.38), inset 15px 17px 27px rgba(255,255,255,.2), inset -18px -17px 28px rgba(5,22,61,.46); transform:translate3d(var(--pointer-x), var(--pointer-y), 0) rotate(-7deg); transition:transform .6s cubic-bezier(.18,.96,.25,1.35), border-radius .6s ease, box-shadow .5s ease; animation:wf-breathe 5s ease-in-out infinite; }.wf-core::before { position:absolute; width:190px; height:65px; content:""; background:linear-gradient(105deg, transparent 30%, rgba(255,255,255,.75) 47%, transparent 61%); transform:rotate(-39deg) translateY(-52px); animation:wf-sheen 5s ease-in-out infinite; }.wf-core::after { position:absolute; inset:12px; content:""; border:1px solid rgba(227,255,252,.42); border-radius:inherit; }.wf-core-glint { position:relative; z-index:1; width:18px; height:18px; border:1px solid rgba(229,255,251,.72); border-radius:50%; box-shadow:0 0 22px rgba(255,255,255,.78), inset 0 0 10px rgba(255,255,255,.44); opacity:.76; }.wf-stage.is-listening .wf-core { border-radius:50%; box-shadow:0 0 0 17px rgba(92,230,209,.1), 0 0 95px rgba(61,230,209,.66), inset 15px 17px 27px rgba(255,255,255,.2), inset -18px -17px 28px rgba(5,22,61,.46); animation:wf-listen .75s ease-in-out infinite alternate; }.wf-stage.is-listening .wf-orbit { border-color:rgba(150,255,241,.5); animation-duration:4s; }.wf-stage.is-speaking .wf-core { border-radius:42% 58% 46% 54% / 55% 42% 58% 45%; animation:wf-speak 1.25s ease-in-out infinite; }.wf-stage.is-speaking .wf-orbit { border-color:rgba(177,157,255,.43); }@keyframes wf-breathe { 0%,100% { scale:.97; } 50% { scale:1.03; } }@keyframes wf-listen { from { scale:.96; } to { scale:1.1; } }@keyframes wf-speak { 0%,100% { scale:1; rotate:-5deg; } 50% { scale:1.075; rotate:4deg; } }@keyframes wf-sheen { 0%, 25% { transform:rotate(-39deg) translateY(-70px); opacity:0; } 48%, 65% { opacity:.85; } 84%,100% { transform:rotate(-39deg) translateY(125px); opacity:0; } }
       .wf-wave { position:absolute; bottom:18px; display:flex; align-items:center; justify-content:center; gap:4px; height:48px; }.wf-wave i { display:block; width:3px; height:8px; border-radius:4px; background:linear-gradient(to top, #2ec9ba, #d2fff8); opacity:.38; }.wf-wave i:nth-child(3n) { height:22px; }.wf-wave i:nth-child(4n) { height:35px; }.wf-wave i:nth-child(5n) { height:16px; }.wf-stage.is-listening .wf-wave i, .wf-stage.is-speaking .wf-wave i { opacity:1; animation:wf-bars .62s ease-in-out infinite alternate; }.wf-stage.is-listening .wf-wave i:nth-child(2n), .wf-stage.is-speaking .wf-wave i:nth-child(2n) { animation-delay:-.31s; }.wf-stage.is-listening .wf-wave i:nth-child(3n), .wf-stage.is-speaking .wf-wave i:nth-child(3n) { animation-delay:-.49s; }@keyframes wf-bars { from { transform:scaleY(.3); } to { transform:scaleY(1.45); } }
       .wf-call-card { display:flex; align-items:center; gap:12px; margin:0 auto; padding:8px 11px 8px 9px; border:1px solid rgba(157,219,241,.15); border-radius:15px; background:rgba(5,19,34,.46); box-shadow:0 12px 32px rgba(0,0,0,.15); backdrop-filter:blur(10px); }.wf-stage-mic { width:42px; height:42px; display:grid; place-items:center; flex:0 0 auto; padding:0; color:#04373a; border:1px solid #b6fff4; border-radius:12px; background:linear-gradient(145deg, #a7fff2, #50d7c5); box-shadow:0 5px 16px rgba(55,219,200,.22); transition:transform .35s cubic-bezier(.2,.9,.25,1.45), box-shadow .3s ease, background .3s ease; }.wf-stage-mic:hover { transform:translateY(-2px) scale(1.05); box-shadow:0 9px 22px rgba(55,219,200,.36); }.wf-stage-mic.is-listening { color:#efffff; background:linear-gradient(145deg, #245879, #173650); box-shadow:0 0 0 5px rgba(103,229,207,.1), 0 8px 25px rgba(62,232,210,.32); }.wf-stage-mic svg { width:19px; height:19px; fill:currentColor; }.wf-call-copy strong { display:block; color:#e7f1fb; font-size:11px; letter-spacing:-.02em; }.wf-call-copy span { display:block; max-width:210px; margin-top:2px; color:#88a0b8; font-size:9px; line-height:1.4; }.wf-stage-bottom { margin-top:14px; }.wf-stage-bottom span { color:#7790aa; font-family:ui-monospace, SFMono-Regular, Consolas, monospace; font-size:9px; letter-spacing:.03em; }.wf-stage-bottom .wf-recording { display:flex; align-items:center; gap:5px; color:#9cb3c9; }.wf-recording i { width:5px; height:5px; border-radius:50%; background:#e9879d; box-shadow:0 0 9px rgba(233,135,157,.75); }
       .wf-transcript { min-height:0; display:grid; grid-template-rows:auto minmax(0,1fr) auto auto; background:rgba(4,17,31,.4); }.wf-transcript-head { display:flex; align-items:center; justify-content:space-between; gap:9px; padding:19px 21px 13px; border-bottom:1px solid rgba(177,216,244,.09); }.wf-transcript-head p { margin:0; color:#8fa6bd; font-family:ui-monospace, SFMono-Regular, Consolas, monospace; font-size:9px; font-weight:700; letter-spacing:.16em; }.wf-transcript-head span { color:#79e9d5; font-family:ui-monospace, SFMono-Regular, Consolas, monospace; font-size:9px; }.wf-messages { min-height:0; display:flex; flex-direction:column; gap:15px; padding:19px 21px 9px; overflow-y:auto; scroll-behavior:smooth; scrollbar-color:#35536e transparent; scrollbar-width:thin; }.wf-message { display:flex; align-items:flex-end; gap:9px; max-width:92%; animation:wf-message-in .42s cubic-bezier(.2,.9,.25,1.18) both; }.wf-message.user { align-self:flex-end; flex-direction:row-reverse; }.wf-mini-avatar { width:25px; height:25px; display:grid; place-items:center; flex:0 0 auto; color:#063b3e; border-radius:8px; background:var(--wf-teal); font-size:7px; font-weight:900; }.wf-message.user .wf-mini-avatar { color:#dce8f5; background:#345172; }.wf-bubble { padding:10px 12px 8px; border:1px solid rgba(167,211,244,.12); border-radius:4px 14px 14px 14px; background:linear-gradient(135deg, rgba(27,60,91,.82), rgba(16,42,68,.7)); box-shadow:0 8px 21px rgba(0,0,0,.08); }.wf-message.user .wf-bubble { border-radius:14px 4px 14px 14px; background:linear-gradient(135deg, rgba(64,80,133,.72), rgba(42,65,104,.72)); }.wf-bubble p { margin:0; color:#e2edf8; font-size:12px; line-height:1.62; white-space:pre-wrap; word-break:break-word; }.wf-message time { display:block; margin-top:5px; color:#7790aa; font-size:9px; }.wf-typing { display:flex; align-items:center; gap:4px; min-height:15px; }.wf-typing i { display:block; width:5px; height:5px; border-radius:50%; background:var(--wf-teal); animation:wf-bounce .85s ease-in-out infinite; }.wf-typing i:nth-child(2) { animation-delay:.12s; }.wf-typing i:nth-child(3) { animation-delay:.24s; }@keyframes wf-bounce { 0%,100% { opacity:.25; transform:translateY(0); } 50% { opacity:1; transform:translateY(-3px); } }@keyframes wf-message-in { from { opacity:0; transform:translateY(10px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
@@ -67,7 +72,7 @@
     <section class="wf-wrap" aria-label="${escapeHtml(config.title)} portfolio assistant">
       <section class="wf-panel" aria-label="${escapeHtml(config.title)} live conversation" aria-hidden="true">
         <header class="wf-header">
-          <div class="wf-avatar" aria-hidden="true">WF</div>
+          <div class="wf-avatar" aria-hidden="true"><img class="wf-brand-logo" src="${escapeAttribute(config.logo)}" alt="" /></div>
           <div class="wf-heading"><strong>${escapeHtml(config.title)}</strong><span><i class="wf-live-dot"></i> Creative voice companion</span></div>
           <button class="wf-icon-button wf-speaker" type="button" aria-label="Turn voice replies off" aria-pressed="true" title="Voice replies"><svg class="wf-speaker-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.4 3a4.4 4.4 0 0 0-2.2-3.8v7.6a4.4 4.4 0 0 0 2.2-3.8Zm0-8.5v2.1a7 7 0 0 1 0 12.8v2.1a9 9 0 0 0 0-17.9Z" /></svg><svg class="wf-speaker-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm15.7 1.3-1.4-1.4-2.3 2.3-2.3-2.3-1.4 1.4 2.3 2.3-2.3 2.3 1.4 1.4 2.3-2.3 2.3 2.3 1.4-1.4-2.3-2.3 2.3-2.3Z" /></svg></button>
           <button class="wf-icon-button wf-reset" type="button" aria-label="Start a new conversation" title="New conversation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 2.2 5.5h-2.1A6 6 0 1 1 18.5 8H15v2h7V3h-2v3.5A8 8 0 0 0 20 11Z" /></svg></button>
@@ -78,7 +83,7 @@
             <div class="wf-stage-top"><p class="wf-stage-label">LIVE CREATIVE SESSION</p><span class="wf-stage-latency"><i></i> ONLINE</span></div>
             <div class="wf-visual-field" aria-hidden="true">
               <div class="wf-orbit wf-orbit-three"></div><div class="wf-orbit wf-orbit-two"></div><div class="wf-orbit wf-orbit-one"></div><div class="wf-core-shadow"></div>
-              <div class="wf-core"><span class="wf-core-word">WF<small>AI</small></span></div>
+              <div class="wf-core" aria-label="Animated WF Assist voice presence"><span class="wf-core-glint"></span></div>
               <div class="wf-wave">${"<i></i>".repeat(19)}</div>
             </div>
             <div class="wf-stage-bottom"><div class="wf-call-card"><button class="wf-stage-mic" type="button" aria-label="Start voice chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21H8v2h8v-2h-3v-3.1A7 7 0 0 0 19 11h-2Z" /></svg></button><div class="wf-call-copy"><strong>Start voice conversation</strong><span class="wf-stage-status">Tap to talk with WF Assist</span></div></div><span class="wf-recording"><i></i> TRANSCRIPT ON</span></div>
@@ -116,8 +121,11 @@
     conversation: [],
     isOpen: false,
     isListening: false,
-    voiceReplies: config.autoSpeak && "speechSynthesis" in window,
+    voiceReplies: config.autoSpeak,
     recognition: null,
+    mediaRecorder: null,
+    audioPlayer: null,
+    preferSecureTranscription: false,
     lead: null,
   };
 
@@ -212,6 +220,9 @@
 
   function plainFallback(question) {
     const query = question.toLowerCase();
+    if (/(founder|who.*(behind|created)|about.*(company|wf|wings forever)|company|brand story|personal|journey|mission|vision|value|founded|foundation|what year)/.test(query)) {
+      return "WF is the independent creative portfolio of Pratyaksh Kumar, a freelance visual and motion designer from New Delhi who is currently based in Vilnius, Lithuania. His public profile describes a remote, learning-led practice built around creativity, collaboration, technical exploration, and impactful digital experiences. The site does not publish an official founding year for WF, so I would not want to guess—would you like the contact details for a direct introduction?";
+    }
     if (/(price|cost|rate|quote|budget)/.test(query)) return "WF prepares quotes around the needs of each brief rather than using a published one-size-fits-all price. If you tell me what you need designed and your preferred timeline, I can start a project enquiry.";
     if (/(service|hire|work with|collaborat)/.test(query)) return "WF offers motion design, graphic design, illustrations, cinematic title visuals, experimental 3D concepts, and tailored visual direction for remote collaborations. What type of visual story or asset do you need?";
     if (/(motion|animation|after effects|blender|3d)/.test(query)) return "For motion work, explore Through the Eyes of Football, The Dream Pursuit, and the Motion Design Lab. WF’s portfolio also documents experimentation with After Effects, Blender, title design, and 3D concepts. Would you like a recommendation for a specific style?";
@@ -320,19 +331,68 @@
   }
 
   function setVoiceReplies(enabled) {
-    state.voiceReplies = enabled && "speechSynthesis" in window;
+    state.voiceReplies = Boolean(enabled);
     ui.speaker.classList.toggle("is-muted", !state.voiceReplies);
     ui.speaker.setAttribute("aria-pressed", String(state.voiceReplies));
     ui.speaker.setAttribute("aria-label", state.voiceReplies ? "Turn voice replies off" : "Turn voice replies on");
-    if (!state.voiceReplies) window.speechSynthesis?.cancel();
+    if (!state.voiceReplies) stopAudioReply();
   }
 
-  function speak(value) {
-    if (!state.voiceReplies || !("speechSynthesis" in window)) return;
+  function stopAudioReply() {
+    window.speechSynthesis?.cancel();
+    if (state.audioPlayer) {
+      state.audioPlayer.pause();
+      state.audioPlayer.src = "";
+      state.audioPlayer = null;
+    }
+    if (!state.isListening) showStatus("");
+  }
+
+  function preferredBrowserVoice() {
+    const voices = window.speechSynthesis?.getVoices?.() || [];
+    const naturalVoice = voices.find((voice) => /Microsoft (Aria|Jenny|Ava|Emma|Sonia|Sara|Ryan|Guy)|Google (US|UK) English|Samantha|Karen|Daniel|Zira|Hazel/i.test(voice.name));
+    return naturalVoice || voices.find((voice) => /^en[-_]/i.test(voice.lang)) || voices[0];
+  }
+
+  async function speak(value) {
+    if (!state.voiceReplies) return;
+    stopAudioReply();
+    // Prefer the optional server-side AI voice. The browser voice is a reliable fallback
+    // while a key is not configured or a visitor is offline.
+    try {
+      const response = await fetch(config.speechApi, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: value }),
+      });
+      if (!response.ok) throw new Error("AI voice unavailable");
+      const blob = await response.blob();
+      const audio = new Audio(URL.createObjectURL(blob));
+      state.audioPlayer = audio;
+      audio.onplay = () => { if (!state.isListening) showStatus("WF Assist is speaking…"); };
+      audio.onended = () => {
+        URL.revokeObjectURL(audio.src);
+        if (state.audioPlayer === audio) state.audioPlayer = null;
+        if (!state.isListening) showStatus("");
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(audio.src);
+        if (state.audioPlayer === audio) state.audioPlayer = null;
+        speakWithBrowser(value);
+      };
+      await audio.play();
+    } catch (_) {
+      speakWithBrowser(value);
+    }
+  }
+
+  function speakWithBrowser(value) {
+    if (!("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(value);
     utterance.lang = document.documentElement.lang || "en-US";
-    utterance.rate = 1;
+    utterance.voice = preferredBrowserVoice() || null;
+    utterance.rate = .96;
     utterance.pitch = 1;
     utterance.onstart = () => { if (!state.isListening) showStatus("WF Assist is speaking…"); };
     utterance.onend = () => { if (!state.isListening) showStatus(""); };
@@ -341,6 +401,24 @@
   }
 
   function recognitionSupported() { return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition); }
+  function recordingSupported() { return Boolean(navigator.mediaDevices?.getUserMedia && window.MediaRecorder); }
+
+  function setListeningUi(active) {
+    state.isListening = active;
+    ui.mic.classList.toggle("is-listening", active);
+    ui.stageMic.classList.toggle("is-listening", active);
+    ui.stage.classList.toggle("is-listening", active);
+    ui.mic.setAttribute("aria-label", active ? "Stop listening" : "Speak to WF Assist");
+    ui.stageMic.setAttribute("aria-label", active ? "Stop listening" : "Start voice chat");
+  }
+
+  async function requestMicrophonePermission() {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("This browser cannot access the microphone. Please use a current version of Chrome, Edge, Safari, or type your message.");
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+    stream.getTracks().forEach((track) => track.stop());
+  }
 
   function getRecognition() {
     if (state.recognition) return state.recognition;
@@ -353,14 +431,9 @@
     let finalTranscript = "";
     recognition.onstart = () => {
       finalTranscript = "";
-      state.isListening = true;
-      ui.mic.classList.add("is-listening");
-      ui.stageMic.classList.add("is-listening");
-      ui.stage.classList.add("is-listening");
-      ui.mic.setAttribute("aria-label", "Stop listening");
-      ui.stageMic.setAttribute("aria-label", "Stop listening");
+      setListeningUi(true);
       showStatus("Listening…");
-      window.speechSynthesis?.cancel();
+      stopAudioReply();
     };
     recognition.onresult = (event) => {
       let interim = "";
@@ -372,20 +445,16 @@
     };
     recognition.onerror = (event) => {
       const messages = {
-        "not-allowed": "Microphone permission was not granted. You can type instead.",
-        "service-not-allowed": "Voice input is currently unavailable. You can type instead.",
+        "not-allowed": "Microphone permission was not granted. Allow microphone access in your browser settings, then try again.",
+        "service-not-allowed": "This browser’s speech service is unavailable. WF Assist can use secure transcription when the AI voice service is configured.",
         "audio-capture": "No microphone was found. Check your device settings and try again.",
-        "no-speech": "I didn’t hear anything. Please try again.",
+        "no-speech": "I didn’t hear anything. Please try again a little closer to the microphone.",
       };
+      if (event.error === "service-not-allowed") state.preferSecureTranscription = true;
       if (event.error !== "aborted") showStatus(messages[event.error] || "Voice input had a problem. Please try again.");
     };
     recognition.onend = () => {
-      state.isListening = false;
-      ui.mic.classList.remove("is-listening");
-      ui.stageMic.classList.remove("is-listening");
-      ui.stage.classList.remove("is-listening");
-      ui.mic.setAttribute("aria-label", "Speak to WF Assist");
-      ui.stageMic.setAttribute("aria-label", "Start voice chat");
+      setListeningUi(false);
       if (finalTranscript.trim()) {
         showStatus("Thinking…");
         askAssistant(finalTranscript, true);
@@ -395,20 +464,66 @@
     return recognition;
   }
 
-  function toggleListening() {
-    if (!recognitionSupported()) {
-      showStatus(text.voiceUnavailable);
-      addMessage(text.voiceUnavailable, "assistant", { speak: false });
-      return;
-    }
-    const recognition = getRecognition();
-    if (state.isListening) {
-      recognition.stop();
-      return;
-    }
-    try { recognition.start(); } catch { showStatus("Voice input is preparing. Please try again in a moment."); }
+  async function startSecureRecording() {
+    if (!recordingSupported()) throw new Error("Voice input is not supported in this browser. Please type your question instead.");
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+    const supportedType = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find((type) => MediaRecorder.isTypeSupported?.(type));
+    const recorder = supportedType ? new MediaRecorder(stream, { mimeType: supportedType }) : new MediaRecorder(stream);
+    const chunks = [];
+    state.mediaRecorder = recorder;
+    recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
+    recorder.onstart = () => {
+      setListeningUi(true);
+      showStatus("Listening securely… tap the microphone again when you finish.");
+      stopAudioReply();
+    };
+    recorder.onstop = async () => {
+      stream.getTracks().forEach((track) => track.stop());
+      setListeningUi(false);
+      state.mediaRecorder = null;
+      const audio = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+      if (!audio.size) { showStatus("No voice audio was recorded. Please try again."); return; }
+      showStatus("Transcribing your voice…");
+      try {
+        const response = await fetch(config.transcribeApi, { method: "POST", headers: { "Content-Type": audio.type }, body: audio });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "Voice transcription is unavailable.");
+        const transcript = String(result.transcript || "").trim();
+        if (!transcript) throw new Error("I could not hear a clear question. Please try again.");
+        showStatus("Thinking…");
+        askAssistant(transcript, true);
+      } catch (error) {
+        showStatus(error.message || "Voice transcription failed. Please type your question instead.");
+      }
+    };
+    recorder.start(250);
   }
 
+  async function toggleListening() {
+    if (state.isListening) {
+      if (state.mediaRecorder?.state === "recording") state.mediaRecorder.stop();
+      else state.recognition?.stop();
+      return;
+    }
+    try {
+      // Prompt for microphone access up front. This produces a clear browser permission flow
+      // instead of a vague speech-recognition failure.
+      await requestMicrophonePermission();
+      if (recognitionSupported() && !state.preferSecureTranscription) {
+        const recognition = getRecognition();
+        recognition.start();
+      } else {
+        await startSecureRecording();
+      }
+    } catch (error) {
+      const message = error.name === "NotAllowedError"
+        ? "Microphone permission is blocked. Allow it in your browser’s site settings, then tap the microphone again."
+        : (error.message || "I could not start the microphone. Please try again.");
+      showStatus(message);
+    }
+  }
   function resetConversation() {
     window.speechSynthesis?.cancel();
     state.recognition?.abort();

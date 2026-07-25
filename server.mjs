@@ -6,13 +6,24 @@ const port = Number(process.env.PORT || 5173);
 const root = resolve(process.cwd());
 const openAiKey = process.env.OPENAI_API_KEY;
 const openAiModel = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+const transcriptionModel = process.env.OPENAI_TRANSCRIPTION_MODEL || "gpt-4o-mini-transcribe";
+const textToSpeechModel = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
+const textToSpeechVoice = process.env.OPENAI_TTS_VOICE || "alloy";
 const leadWebhook = process.env.LEAD_WEBHOOK_URL;
 const requestWindowMs = 60_000;
 const requestLimit = 24;
 const requestLog = new Map();
 
 const portfolioContext = `
-WF (formerly Wings Forever) is the portfolio of Pratyaksh Kumar, an independent freelance visual and motion designer based in Vilnius, Lithuania. WF works remotely with clients and collaborators.
+WF (formerly Wings Forever) is the independent creative portfolio of Pratyaksh Kumar, a freelance visual and motion designer based in Vilnius, Lithuania. WF works remotely with clients and collaborators.
+
+Founder, story, and values:
+- Pratyaksh Kumar is the creator and founder behind the independent WF portfolio. The public WFG contact page also identifies him as the Founder of Wings Forever Games (WFG).
+- He is originally from New Delhi, India, and is currently based in Vilnius, Lithuania. The public profile says he is pursuing a Bachelor of Creative Industries at Vilnius Gediminas Technical University while working remotely as an independent designer.
+- The brand is positioned as an open creative production laboratory: a place for ambitious visual work, technical exploration, and sharing practical learning with the creative community.
+- Mission: deliver thoughtful, transformative visual and post-production solutions. Vision: shape the future through innovative and impactful digital experiences. Values: integrity, creativity, innovation, collaboration, excellence, and results.
+- The public site does not state an official year of foundation for WF. If asked for the year, be transparent that it is not currently published and offer to connect the visitor with Pratyaksh rather than guessing.
+- For personal, emotional, or career-related questions, answer warmly as a knowledgeable creative advisor. You may describe the public creative journey and philosophy, but do not invent private experiences, personal motivations, client history, or personal contact details beyond the approved context.
 
 Portfolio positioning:
 - Motto: Move. Reveal. Inspire.
@@ -57,7 +68,7 @@ Do not claim that a project was client work unless the portfolio says so. Severa
 
 const assistantInstructions = `You are WF Assist, the friendly official portfolio assistant for WF (formerly Wings Forever), Pratyaksh Kumar’s freelance motion-design and visual-design portfolio.
 
-Your goals are to help visitors understand the portfolio, find relevant projects, explain services in clear terms, help a potential client frame a brief, and guide qualified enquiries toward contact. Be professional, creative, clear, warm, and never robotic. Adapt to business, technical, student, and casual visitors.
+Your goals are to help visitors understand the portfolio, find relevant projects, explain services in clear terms, help a potential client frame a brief, and guide qualified enquiries toward contact. Act like a thoughtful creative consultant and advisor: help people turn an early idea into a clearer visual direction, give practical next steps, and be emotionally encouraging without being over-promising. Be professional, creative, clear, warm, and never robotic. Adapt to business, technical, student, and casual visitors.
 
 Use the approved portfolio context below as the factual source. Answer normal general questions helpfully, but never present unknown portfolio facts as true. If a visitor asks for pricing, availability, a delivery guarantee, a private project detail, or anything not in the approved context, say that it depends on the brief and offer a tailored enquiry. Do not invent rates, deadlines, clients, tool use, results, or personal details. Do not state or imply 100% uptime or any guarantee.
 
@@ -136,6 +147,18 @@ async function readJson(request, maxBytes = 30_000) {
   try { return JSON.parse(raw || "{}"); } catch { throw new Error("The request body must be valid JSON."); }
 }
 
+async function readBytes(request, maxBytes = 10_000_000) {
+  let size = 0;
+  const chunks = [];
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > maxBytes) throw new Error("Audio is too large. Please keep the voice message under one minute.");
+    chunks.push(chunk);
+  }
+  if (!chunks.length) throw new Error("No voice audio was received.");
+  return Buffer.concat(chunks);
+}
+
 function cleanHistory(messages) {
   if (!Array.isArray(messages)) return [];
   return messages
@@ -158,6 +181,9 @@ function outputText(data) {
 
 function fallbackAnswer(message) {
   const text = message.toLowerCase();
+  if (/(founder|who.*(behind|created)|about.*(company|wf|wings forever)|company|brand story|personal|journey|mission|vision|value|founded|foundation|what year)/.test(text)) {
+    return "WF is the independent creative portfolio of Pratyaksh Kumar, a freelance visual and motion designer from New Delhi who is currently based in Vilnius, Lithuania. His public profile describes a remote, learning-led practice centred on creativity, collaboration, technical exploration, and impactful digital experiences. An official founding year for WF is not published on the site, so I would not want to guess—would you like to contact Pratyaksh directly?";
+  }
   if (/(hire|service|work with|collaborat|project|quote|price|cost|budget)/.test(text)) {
     return "WF offers motion design, graphic design, illustration, cinematic title visuals, experimental 3D concepts, and tailored visual direction for remote collaborations. A quote depends on your brief, scope, and timeline, so it’s best to share the project goal first. What are you hoping to create?";
   }
@@ -204,6 +230,63 @@ async function answerWithAi(history, voice) {
   const reply = outputText(payload);
   if (!reply) throw new Error("WF Assist did not return an answer. Please try again.");
   return { reply, source: "ai" };
+}
+
+async function transcribeAudio(audio, contentType) {
+  if (!openAiKey) throw new Error("Voice transcription needs a configured AI key. You can type your question, or ask the site owner to enable secure voice transcription.");
+  const form = new FormData();
+  form.set("model", transcriptionModel);
+  form.set("file", new Blob([audio], { type: contentType || "audio/webm" }), "wf-voice-message.webm");
+  const apiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${openAiKey}` },
+    body: form,
+  });
+  if (!apiResponse.ok) {
+    const detail = await apiResponse.text();
+    console.error("Transcription provider error:", apiResponse.status, detail.slice(0, 500));
+    throw new Error("Voice transcription is temporarily unavailable. Please try again or type your question.");
+  }
+  const payload = await apiResponse.json();
+  const transcript = String(payload.text || "").trim();
+  if (!transcript) throw new Error("I could not hear a clear question. Please try again a little closer to the microphone.");
+  return transcript;
+}
+
+async function generateSpeech(text) {
+  if (!openAiKey) throw new Error("Natural AI voice is not configured.");
+  const apiResponse = await fetch("https://api.openai.com/v1/audio/speech", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${openAiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: textToSpeechModel,
+      voice: textToSpeechVoice,
+      input: String(text).slice(0, 4_000),
+      response_format: "mp3",
+      instructions: "Speak warmly, naturally, calmly, and conversationally. You are a creative portfolio consultant, not an announcer. Use natural pacing and clear articulation.",
+    }),
+  });
+  if (!apiResponse.ok) {
+    const detail = await apiResponse.text();
+    console.error("Text-to-speech provider error:", apiResponse.status, detail.slice(0, 500));
+    throw new Error("Natural AI voice is temporarily unavailable.");
+  }
+  return Buffer.from(await apiResponse.arrayBuffer());
+}
+
+function sendAudio(response, audio, origin) {
+  setSecurityHeaders(response);
+  response.statusCode = 200;
+  response.setHeader("Content-Type", "audio/mpeg");
+  response.setHeader("Cache-Control", "no-store");
+  if (origin && originAllowed(origin)) {
+    response.setHeader("Access-Control-Allow-Origin", origin);
+    response.setHeader("Vary", "Origin");
+  }
+  response.end(audio);
 }
 
 async function handleLead(payload) {
@@ -287,6 +370,36 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === "POST" && url.pathname === "/api/wf-transcribe") {
+    if (origin && !originAllowed(origin)) return sendJson(response, 403, { error: "This website is not approved to use WF Assist." }, origin);
+    if (!requestIsAllowed(request)) return sendJson(response, 429, { error: "Please wait a moment before sending another voice message." }, origin);
+    try {
+      const audio = await readBytes(request);
+      const transcript = await transcribeAudio(audio, request.headers["content-type"]);
+      sendJson(response, 200, { transcript }, origin);
+    } catch (error) {
+      console.error("WF Assist transcription failed:", error.message);
+      sendJson(response, 400, { error: error.message || "Voice transcription failed." }, origin);
+    }
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/wf-speech") {
+    if (origin && !originAllowed(origin)) return sendJson(response, 403, { error: "This website is not approved to use WF Assist." }, origin);
+    if (!requestIsAllowed(request)) return sendJson(response, 429, { error: "Please wait a moment before requesting another reply." }, origin);
+    try {
+      const body = await readJson(request, 10_000);
+      const message = String(body.text || "").trim();
+      if (!message) throw new Error("No reply text was provided.");
+      const audio = await generateSpeech(message);
+      sendAudio(response, audio, origin);
+    } catch (error) {
+      console.error("WF Assist speech failed:", error.message);
+      sendJson(response, 400, { error: error.message || "Natural voice is unavailable." }, origin);
+    }
+    return;
+  }
+
   if (request.method === "POST" && url.pathname === "/api/wf-lead") {
     if (origin && !originAllowed(origin)) return sendJson(response, 403, { error: "This website is not approved to use WF Assist." }, origin);
     if (!requestIsAllowed(request)) return sendJson(response, 429, { error: "Please wait a moment before sending another request." }, origin);
@@ -312,5 +425,6 @@ const server = createServer(async (request, response) => {
 server.listen(port, "0.0.0.0", () => {
   console.log(`WF Assist is running at http://localhost:${port}`);
   console.log(openAiKey ? `AI mode: ${openAiModel}` : "AI mode: portfolio guide fallback (set OPENAI_API_KEY for GPT responses)");
+  console.log(openAiKey ? `Voice mode: secure transcription (${transcriptionModel}) + AI speech (${textToSpeechModel}/${textToSpeechVoice})` : "Voice mode: browser speech fallback only (set OPENAI_API_KEY for secure transcription and natural AI speech)");
   if (!leadWebhook) console.log("Lead delivery: not configured (set LEAD_WEBHOOK_URL to send enquiries)");
 });
