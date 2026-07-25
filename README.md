@@ -37,6 +37,20 @@ Open [http://localhost:5173](http://localhost:5173). Select **Try WF Assist** in
 
 ### Enable live AI answers locally
 
+For the simplest local setup, copy the ignored template and add a **new private key** only on your computer:
+
+```bash
+cp .env.example .env
+```
+
+On Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Open `.env` in a local editor, replace only `OPENAI_API_KEY=replace_with_a_new_private_key`, save it, then run `npm run dev`. The server reads `.env` locally; `.env` is ignored by Git and must never be committed.
+
 **macOS/Linux**
 
 ```bash

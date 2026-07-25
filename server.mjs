@@ -1,6 +1,28 @@
 import { createServer } from "node:http";
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
+
+function loadLocalEnvironment() {
+  // A dependency-free local convenience only. Production hosts should use their secret manager.
+  try {
+    const lines = readFileSync(resolve(process.cwd(), ".env"), "utf8").split(/\r?\n/);
+    for (const line of lines) {
+      const entry = line.trim();
+      if (!entry || entry.startsWith("#")) continue;
+      const separator = entry.indexOf("=");
+      if (separator < 1) continue;
+      const key = entry.slice(0, separator).trim();
+      let value = entry.slice(separator + 1).trim();
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
+      if (!process.env[key]) process.env[key] = value;
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") console.warn("Could not read local .env file:", error.message);
+  }
+}
+
+loadLocalEnvironment();
 
 const port = Number(process.env.PORT || 5173);
 const root = resolve(process.cwd());
@@ -193,6 +215,18 @@ function fallbackAnswer(message) {
   if (/(founder|who.*(behind|created)|about.*(company|wf|wings forever)|company|brand story|personal|journey|mission|vision|value|founded|foundation|what year)/.test(text)) {
     return "WF is the independent creative portfolio of Pratyaksh Kumar, a freelance visual and motion designer from New Delhi who is currently based in Vilnius, Lithuania. His public profile describes a remote, learning-led practice centred on creativity, collaboration, technical exploration, and impactful digital experiences. An official founding year for WF is not published on the site, so I would not want to guess—would you like to contact Pratyaksh directly?";
   }
+  if (/(headache|migraine|head pain)/.test(text)) {
+    return "For a mild, familiar headache, try water, a small meal if you have not eaten, rest in a dim quiet room, and a short break from screens. Only use pain medicine that is safe for you and follow its label or your clinician’s advice. Seek urgent medical help for a sudden severe headache, one after an injury, or one with fever, confusion, weakness, vision changes, or a stiff neck.";
+  }
+  if (/(stress|anxious|anxiety|overwhelm|feeling low|sad)/.test(text)) {
+    return "I’m sorry things feel heavy. A useful first step can be to slow the next ten minutes down: breathe, drink some water, name the one thing that needs attention now, and let the rest wait briefly. If you feel unsafe or might hurt yourself, contact local emergency services or a trusted person right away. Would it help to talk through what is making today difficult?";
+  }
+  if (/(idea|brainstorm|creative block|stuck|motivat)/.test(text)) {
+    return "Let’s make the problem smaller. Tell me the audience, the feeling you want to create, and the format you are working in; I can turn that into a few practical directions, references to explore, or a simple next-step plan.";
+  }
+  if (/(hello|hi|hey|how are you)/.test(text)) {
+    return "Hey — I’m glad you’re here. I can chat through creative ideas, everyday questions, and the WF portfolio. What is on your mind today?";
+  }
   if (/(hire|service|work with|collaborat|project|quote|price|cost|budget)/.test(text)) {
     return "WF offers motion design, graphic design, illustration, cinematic title visuals, experimental 3D concepts, and tailored visual direction for remote collaborations. A quote depends on your brief, scope, and timeline, so it’s best to share the project goal first. What are you hoping to create?";
   }
@@ -208,7 +242,7 @@ function fallbackAnswer(message) {
   if (/(portfolio|project|work)/.test(text)) {
     return "The portfolio is organised into Wings Projects, Motion Design Lab, and Visual Design Archive. A strong starting point is Through the Eyes of Football for motion work, The Dream Pursuit for trailer storytelling, or Global Race for poster design. What kind of work would you like to explore?";
   }
-  return "I’m WF Assist, here to help you explore Pratyaksh Kumar’s motion-design and visual-design portfolio. I can recommend projects, explain creative services, or help you shape a project enquiry. What would you like to know?";
+  return "I’m WF Assist. I can help think through everyday questions, creative ideas, motion design, technology, and the WF portfolio. For a fully open-ended AI conversation, start the local server with a valid OPENAI_API_KEY. What would you like to talk through?";
 }
 
 const weatherDescriptions = {
