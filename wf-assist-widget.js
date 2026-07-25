@@ -22,7 +22,8 @@
     leadApi: currentScript?.dataset.wfLeadApi || localLeadApi,
     transcribeApi: currentScript?.dataset.wfTranscribeApi || localTranscriptionApi,
     speechApi: currentScript?.dataset.wfSpeechApi || localSpeechApi,
-    logo: currentScript?.dataset.wfLogo || "https://wingsforever.pro/wp-content/uploads/2026/05/new-WF-2048x2048.png",
+    logo: currentScript?.dataset.wfLogo || "https://wingsforever.pro/wp-content/uploads/2026/07/WF-final-logo-branding-animation-with-trannsperacy.gif",
+    fallbackLogo: "https://wingsforever.pro/wp-content/uploads/2026/05/new-WF-2048x2048.png",
     title: currentScript?.dataset.wfTitle || "WF Assist",
     siteUrl: currentScript?.dataset.wfSiteUrl || "https://wingsforever.pro/",
     autoSpeak: currentScript?.dataset.wfAutoSpeak !== "false",
@@ -104,6 +105,7 @@
     wrap: root.querySelector(".wf-wrap"),
     panel: root.querySelector(".wf-panel"),
     launcher: root.querySelector(".wf-launcher"),
+    logo: root.querySelector(".wf-brand-logo"),
     stage: root.querySelector(".wf-stage"),
     stageMic: root.querySelector(".wf-stage-mic"),
     stageStatus: root.querySelector(".wf-stage-status"),
@@ -549,6 +551,11 @@
   ui.speaker.addEventListener("click", () => setVoiceReplies(!state.voiceReplies));
   ui.reset.addEventListener("click", resetConversation);
   ui.close.addEventListener("click", closeWidget);
+  ui.logo.addEventListener("error", () => {
+    if (ui.logo.dataset.usedFallback) return;
+    ui.logo.dataset.usedFallback = "true";
+    ui.logo.src = config.fallbackLogo;
+  });
   addStagePhysics();
   root.querySelectorAll(".wf-suggestion").forEach((button) => button.addEventListener("click", () => {
     if (button.dataset.action === "lead") { openWidget(false); startLead(); }
