@@ -6,7 +6,12 @@ import { extname, resolve, sep } from "node:path";
 function loadLocalEnvironment() {
   // A dependency-free local convenience only. Production hosts should use their secret manager.
   try {
-    const lines = readFileSync(resolve(process.cwd(), ".env"), "utf8").split(/\r?\n/);
+    const raw = readFileSync(resolve(process.cwd(), ".env"), "utf8");
+    if (/^\s*\{\\rtf/i.test(raw)) {
+      console.warn("Local .env appears to be Rich Text Format. Recreate it as plain text with nano .env.");
+      return;
+    }
+    const lines = raw.split(/\r?\n/);
     for (const line of lines) {
       const entry = line.trim();
       if (!entry || entry.startsWith("#")) continue;
@@ -26,7 +31,8 @@ loadLocalEnvironment();
 
 const port = Number(process.env.PORT || 5173);
 const root = resolve(process.cwd());
-const openAiKey = process.env.OPENAI_API_KEY;
+const suppliedOpenAiKey = process.env.OPENAI_API_KEY?.trim();
+const openAiKey = suppliedOpenAiKey && !/replace_with|your_new|your_key_here|sk-proj-your/i.test(suppliedOpenAiKey) ? suppliedOpenAiKey : undefined;
 const openAiModel = process.env.OPENAI_MODEL || "gpt-4.1-mini";
 const transcriptionModel = process.env.OPENAI_TRANSCRIPTION_MODEL || "gpt-4o-mini-transcribe";
 const textToSpeechModel = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
@@ -199,6 +205,13 @@ function cleanHistory(messages) {
     .filter((item) => item.content);
 }
 
+function providerFailure(status, fallback) {
+  if (status === 401 || status === 403) return "OpenAI rejected the local API key. Check that .env contains a new valid key, then stop and restart npm run dev.";
+  if (status === 429) return "OpenAI is rate-limiting this project or its billing quota is unavailable. Check the API project’s usage and billing, then try again.";
+  if (status === 404) return "The configured OpenAI model is not available to this API project. Check the model name in .env or use a model enabled for the key.";
+  return fallback;
+}
+
 function outputText(data) {
   if (typeof data.output_text === "string" && data.output_text.trim()) return data.output_text.trim();
   const pieces = [];
@@ -304,6 +317,22 @@ async function fetchLiveNews(query) {
   return { topic, articles };
 }
 
+async function getAiHealth() {
+  if (!openAiKey) {
+    return { ok: false, aiConfigured: false, message: "No usable OPENAI_API_KEY was found. Create a plain-text .env file beside package.json, add a new key after OPENAI_API_KEY=, save it, and restart npm run dev." };
+  }
+  try {
+    const response = await fetch(`https://api.openai.com/v1/models/${encodeURIComponent(openAiModel)}`, {
+      headers: { "Authorization": `Bearer ${openAiKey}` },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!response.ok) return { ok: false, aiConfigured: true, message: providerFailure(response.status, "OpenAI could not validate the current model. Please try again shortly.") };
+    return { ok: true, aiConfigured: true, model: openAiModel, message: "OpenAI key and general assistant model are reachable. Realtime voice also requires the configured realtime model to be enabled for this project." };
+  } catch {
+    return { ok: false, aiConfigured: true, message: "The local server could not reach OpenAI. Check your internet connection and try again." };
+  }
+}
+
 async function answerWithAi(history, voice) {
   if (!openAiKey) return { reply: fallbackAnswer(history.at(-1)?.content || ""), source: "portfolio-guide" };
 
@@ -326,7 +355,7 @@ async function answerWithAi(history, voice) {
   if (!apiResponse.ok) {
     const detail = await apiResponse.text();
     console.error("AI provider error:", apiResponse.status, detail.slice(0, 500));
-    throw new Error("WF Assist is temporarily unavailable. Please try again shortly or email pratyakshkumar095@gmail.com.");
+    throw new Error(providerFailure(apiResponse.status, "WF Assist is temporarily unavailable. Please try again shortly or email pratyakshkumar095@gmail.com."));
   }
   const payload = await apiResponse.json();
   const reply = outputText(payload);
@@ -347,7 +376,7 @@ async function transcribeAudio(audio, contentType) {
   if (!apiResponse.ok) {
     const detail = await apiResponse.text();
     console.error("Transcription provider error:", apiResponse.status, detail.slice(0, 500));
-    throw new Error("Voice transcription is temporarily unavailable. Please try again or type your question.");
+    throw new Error(providerFailure(apiResponse.status, "Voice transcription is temporarily unavailable. Please try again or type your question."));
   }
   const payload = await apiResponse.json();
   const transcript = String(payload.text || "").trim();
@@ -374,7 +403,7 @@ async function generateSpeech(text) {
   if (!apiResponse.ok) {
     const detail = await apiResponse.text();
     console.error("Text-to-speech provider error:", apiResponse.status, detail.slice(0, 500));
-    throw new Error("Natural AI voice is temporarily unavailable.");
+    throw new Error(providerFailure(apiResponse.status, "Natural AI voice is temporarily unavailable."));
   }
   return Buffer.from(await apiResponse.arrayBuffer());
 }
@@ -428,7 +457,7 @@ async function createRealtimeSession(sdp) {
   if (!apiResponse.ok) {
     const detail = await apiResponse.text();
     console.error("Realtime provider error:", apiResponse.status, detail.slice(0, 500));
-    throw new Error("Live voice could not connect. Please use the secure voice fallback or check that the realtime model is enabled for this API key.");
+    throw new Error(providerFailure(apiResponse.status, "Live voice could not connect. Please use the secure voice fallback or check that the realtime model is enabled for this API key."));
   }
   return apiResponse.text();
 }
@@ -521,6 +550,13 @@ const server = createServer(async (request, response) => {
       console.error("WF live news failed:", error.message);
       sendJson(response, 400, { error: error.message || "News is unavailable." }, origin);
     }
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/wf-health") {
+    if (origin && !originAllowed(origin)) return sendJson(response, 403, { error: "This website is not approved to use WF Assist." }, origin);
+    const health = await getAiHealth();
+    sendJson(response, health.ok ? 200 : 503, health, origin);
     return;
   }
 

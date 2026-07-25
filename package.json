@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "node server.mjs",
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check wf-assist-widget.js && node --check scene.js && node --check scroll-effects.js"
+    "doctor": "node doctor.mjs",
+    "check": "node --check server.mjs && node --check wf-assist-widget.js && node --check scene.js && node --check scroll-effects.js && node --check doctor.mjs"
   },
   "engines": {
     "node": ">=20"

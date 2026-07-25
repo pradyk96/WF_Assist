@@ -49,7 +49,13 @@ On Windows PowerShell:
 Copy-Item .env.example .env
 ```
 
-Open `.env` in a local editor, replace only `OPENAI_API_KEY=replace_with_a_new_private_key`, save it, then run `npm run dev`. The server reads `.env` locally; `.env` is ignored by Git and must never be committed.
+Open `.env` in a local editor, replace only `OPENAI_API_KEY=replace_with_a_new_private_key`, save it, then run this private local check:
+
+```bash
+npm run doctor
+```
+
+It confirms that `.env` is plain text and that a non-placeholder key exists without printing the key. Then run `npm run dev`. The server reads `.env` locally; `.env` is ignored by Git and must never be committed.
 
 **macOS/Linux**
 

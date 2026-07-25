@@ -21,6 +21,7 @@
   const localRealtimeApi = new URL("/api/wf-realtime-session", scriptUrl.origin).href;
   const localWeatherApi = new URL("/api/wf-weather", scriptUrl.origin).href;
   const localNewsApi = new URL("/api/wf-news", scriptUrl.origin).href;
+  const localHealthApi = new URL("/api/wf-health", scriptUrl.origin).href;
   const config = {
     api: currentScript?.dataset.wfApi || localApi,
     leadApi: currentScript?.dataset.wfLeadApi || localLeadApi,
@@ -30,6 +31,7 @@
     realtimeApi: currentScript?.dataset.wfRealtimeApi || localRealtimeApi,
     weatherApi: currentScript?.dataset.wfWeatherApi || localWeatherApi,
     newsApi: currentScript?.dataset.wfNewsApi || localNewsApi,
+    healthApi: currentScript?.dataset.wfHealthApi || localHealthApi,
     logo: currentScript?.dataset.wfLogo || "https://wingsforever.pro/wp-content/uploads/2026/07/WF-final-logo-branding-animation-with-trannsperacy.gif",
     fallbackLogo: "https://wingsforever.pro/wp-content/uploads/2026/05/new-WF-2048x2048.png",
     title: currentScript?.dataset.wfTitle || "WF Assist",
@@ -401,7 +403,8 @@
       state.conversation.push({ role: "assistant", content: reply });
     } catch (error) {
       typing.remove();
-      const reply = plainFallback(message);
+      const diagnostic = await getAiDiagnostic();
+      const reply = `${plainFallback(message)}\n\nAI connection check: ${diagnostic}`;
       addMessage(reply, "assistant", { speak: voice || state.voiceReplies });
       state.conversation.push({ role: "assistant", content: reply });
       console.warn("WF Assist API unavailable:", error.message);
@@ -493,6 +496,16 @@
       .catch(() => ({ secureTranscription: false, naturalSpeech: false, realtimeVoice: false, browserFallback: true }))
       .finally(() => { state.voiceConfigRequest = null; });
     return state.voiceConfigRequest;
+  }
+
+  async function getAiDiagnostic() {
+    try {
+      const response = await fetch(config.healthApi, { headers: { Accept: "application/json" } });
+      const health = await response.json().catch(() => ({}));
+      return health.message || "WF Assist could not reach its AI service. Check the local server terminal for details.";
+    } catch {
+      return "WF Assist could not reach the local AI health check. Confirm npm run dev is running from the WF_Assist folder.";
+    }
   }
 
   function secureVoiceAvailable() {
@@ -644,7 +657,8 @@
         showStatus("Thinking…");
         askAssistant(transcript, true);
       } catch (error) {
-        showStatus(error.message || "Voice transcription failed. Please type your question instead.");
+        const diagnostic = await getAiDiagnostic();
+        showStatus(`${error.message || "Voice transcription failed."} ${diagnostic}`);
       }
     };
     recorder.start(250);
@@ -817,7 +831,7 @@
       // A transcription route remains available if the account does not yet have Realtime access.
       console.warn("WF realtime voice unavailable:", error.message);
       if (secureVoiceAvailable()) beginSecureVoice();
-      else showStatus(error.message || "Live voice could not start. Please try again.");
+      else getAiDiagnostic().then((diagnostic) => showStatus(`${error.message || "Live voice could not start."} ${diagnostic}`));
     });
 
     // A configured key starts a low-latency WebRTC conversation first. This avoids the browser
