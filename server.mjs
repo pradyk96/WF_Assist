@@ -9,6 +9,9 @@ const openAiModel = process.env.OPENAI_MODEL || "gpt-4.1-mini";
 const transcriptionModel = process.env.OPENAI_TRANSCRIPTION_MODEL || "gpt-4o-mini-transcribe";
 const textToSpeechModel = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
 const textToSpeechVoice = process.env.OPENAI_TTS_VOICE || "alloy";
+const realtimeModel = process.env.OPENAI_REALTIME_MODEL || "gpt-realtime-2.1";
+const realtimeVoice = process.env.OPENAI_REALTIME_VOICE || "marin";
+const realtimeTranscriptionModel = process.env.OPENAI_REALTIME_TRANSCRIPTION_MODEL || "gpt-realtime-whisper";
 const leadWebhook = process.env.LEAD_WEBHOOK_URL;
 const requestWindowMs = 60_000;
 const requestLimit = 24;
@@ -289,6 +292,48 @@ function sendAudio(response, audio, origin) {
   response.end(audio);
 }
 
+function sendSdp(response, sdp, origin) {
+  setSecurityHeaders(response);
+  response.statusCode = 200;
+  response.setHeader("Content-Type", "application/sdp; charset=utf-8");
+  response.setHeader("Cache-Control", "no-store");
+  if (origin && originAllowed(origin)) {
+    response.setHeader("Access-Control-Allow-Origin", origin);
+    response.setHeader("Vary", "Origin");
+  }
+  response.end(sdp);
+}
+
+async function createRealtimeSession(sdp) {
+  if (!openAiKey) throw new Error("Live voice needs a configured OPENAI_API_KEY.");
+  if (!sdp || !sdp.includes("v=0")) throw new Error("The browser did not provide a valid realtime audio offer.");
+
+  const session = {
+    type: "realtime",
+    model: realtimeModel,
+    output_modalities: ["audio"],
+    audio: {
+      input: { transcription: { model: realtimeTranscriptionModel, language: "en", delay: "low" } },
+      output: { voice: realtimeVoice },
+    },
+    instructions: `${assistantInstructions}\n\nThis is a live, speech-to-speech creative consultation. Keep replies warm, concise, and naturally conversational. Never claim to be human.`,
+  };
+  const form = new FormData();
+  form.set("sdp", sdp);
+  form.set("session", JSON.stringify(session));
+  const apiResponse = await fetch("https://api.openai.com/v1/realtime/calls", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${openAiKey}` },
+    body: form,
+  });
+  if (!apiResponse.ok) {
+    const detail = await apiResponse.text();
+    console.error("Realtime provider error:", apiResponse.status, detail.slice(0, 500));
+    throw new Error("Live voice could not connect. Please use the secure voice fallback or check that the realtime model is enabled for this API key.");
+  }
+  return apiResponse.text();
+}
+
 async function handleLead(payload) {
   const lead = {
     name: String(payload.name || "").trim().slice(0, 100),
@@ -360,6 +405,7 @@ const server = createServer(async (request, response) => {
     sendJson(response, 200, {
       secureTranscription: Boolean(openAiKey),
       naturalSpeech: Boolean(openAiKey),
+      realtimeVoice: Boolean(openAiKey),
       browserFallback: true,
     }, origin);
     return;
@@ -377,6 +423,20 @@ const server = createServer(async (request, response) => {
     } catch (error) {
       console.error("WF Assist request failed:", error.message);
       sendJson(response, 400, { error: error.message || "Something went wrong. Please try again." }, origin);
+    }
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/wf-realtime-session") {
+    if (origin && !originAllowed(origin)) return sendJson(response, 403, { error: "This website is not approved to use WF Assist." }, origin);
+    if (!requestIsAllowed(request)) return sendJson(response, 429, { error: "Please wait a moment before starting another live voice session." }, origin);
+    try {
+      const offer = (await readBytes(request, 150_000)).toString("utf8");
+      const answer = await createRealtimeSession(offer);
+      sendSdp(response, answer, origin);
+    } catch (error) {
+      console.error("WF Assist realtime session failed:", error.message);
+      sendJson(response, 400, { error: error.message || "Live voice could not start." }, origin);
     }
     return;
   }
@@ -436,6 +496,6 @@ const server = createServer(async (request, response) => {
 server.listen(port, "0.0.0.0", () => {
   console.log(`WF Assist is running at http://localhost:${port}`);
   console.log(openAiKey ? `AI mode: ${openAiModel}` : "AI mode: portfolio guide fallback (set OPENAI_API_KEY for GPT responses)");
-  console.log(openAiKey ? `Voice mode: secure transcription (${transcriptionModel}) + AI speech (${textToSpeechModel}/${textToSpeechVoice})` : "Voice mode: browser speech fallback only (set OPENAI_API_KEY for secure transcription and natural AI speech)");
+  console.log(openAiKey ? `Voice mode: realtime (${realtimeModel}/${realtimeVoice}) + secure transcription (${transcriptionModel}) + AI speech (${textToSpeechModel}/${textToSpeechVoice})` : "Voice mode: browser speech fallback only (set OPENAI_API_KEY for live realtime voice, secure transcription, and natural AI speech)");
   if (!leadWebhook) console.log("Lead delivery: not configured (set LEAD_WEBHOOK_URL to send enquiries)");
 });

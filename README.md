@@ -66,6 +66,7 @@ A real GPT-level widget needs a secure server because its AI key must remain pri
   data-wf-lead-api="https://assist.your-domain.com/api/wf-lead"
   data-wf-transcribe-api="https://assist.your-domain.com/api/wf-transcribe"
   data-wf-speech-api="https://assist.your-domain.com/api/wf-speech"
+  data-wf-realtime-api="https://assist.your-domain.com/api/wf-realtime-session"
   data-wf-logo="https://wingsforever.pro/wp-content/uploads/2026/07/WF-final-logo-branding-animation-with-trannsperacy.gif"
   data-wf-title="WF Assist"
   data-wf-site-url="https://wingsforever.pro/"
@@ -92,6 +93,9 @@ Do not paste `wf-assist-widget.js` into a page editor that strips `<script>` tag
 | `OPENAI_TRANSCRIPTION_MODEL` | No | Speech-to-text model for secure microphone fallback. Defaults to `gpt-4o-mini-transcribe`; use a transcription model enabled on your account. |
 | `OPENAI_TTS_MODEL` | No | Natural text-to-speech model. Defaults to `gpt-4o-mini-tts`; use a TTS model enabled on your account. |
 | `OPENAI_TTS_VOICE` | No | Voice name supported by the selected TTS model. Defaults to `alloy`; choose a natural voice available to your account. |
+| `OPENAI_REALTIME_MODEL` | No | Low-latency speech-to-speech model for live WebRTC sessions. Defaults to `gpt-realtime-2.1`; it must be enabled for the API key. |
+| `OPENAI_REALTIME_VOICE` | No | Voice for the live WebRTC session. Defaults to `marin`; choose a voice supported by the realtime model enabled on your account. |
+| `OPENAI_REALTIME_TRANSCRIPTION_MODEL` | No | Live transcript model for the meeting transcript column. Defaults to `gpt-realtime-whisper`. |
 | `ALLOWED_ORIGINS` | Yes in production | Comma-separated origins allowed to call the API, e.g. `https://wingsforever.pro,https://www.wingsforever.pro`. |
 | `LEAD_WEBHOOK_URL` | Yes for automatic lead delivery | HTTPS webhook for your CRM, Zapier/Make scenario, ticket tool, or secure server endpoint. Without it, WF Assist transparently asks visitors to email instead of falsely claiming an enquiry was sent. |
 | `PORT` | No | Server port; defaults to `5173`. |

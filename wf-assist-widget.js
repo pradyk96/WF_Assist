@@ -18,12 +18,14 @@
   const localTranscriptionApi = new URL("/api/wf-transcribe", scriptUrl.origin).href;
   const localSpeechApi = new URL("/api/wf-speech", scriptUrl.origin).href;
   const localVoiceConfigApi = new URL("/api/wf-config", scriptUrl.origin).href;
+  const localRealtimeApi = new URL("/api/wf-realtime-session", scriptUrl.origin).href;
   const config = {
     api: currentScript?.dataset.wfApi || localApi,
     leadApi: currentScript?.dataset.wfLeadApi || localLeadApi,
     transcribeApi: currentScript?.dataset.wfTranscribeApi || localTranscriptionApi,
     speechApi: currentScript?.dataset.wfSpeechApi || localSpeechApi,
     voiceConfigApi: currentScript?.dataset.wfVoiceConfigApi || localVoiceConfigApi,
+    realtimeApi: currentScript?.dataset.wfRealtimeApi || localRealtimeApi,
     logo: currentScript?.dataset.wfLogo || "https://wingsforever.pro/wp-content/uploads/2026/07/WF-final-logo-branding-animation-with-trannsperacy.gif",
     fallbackLogo: "https://wingsforever.pro/wp-content/uploads/2026/05/new-WF-2048x2048.png",
     title: currentScript?.dataset.wfTitle || "WF Assist",
@@ -133,6 +135,7 @@
     voiceCapabilities: null,
     voiceConfigRequest: null,
     retrySecureAfterNativeError: false,
+    realtime: null,
     lead: null,
   };
 
@@ -207,7 +210,9 @@
 
   function closeWidget() {
     state.isOpen = false;
-    state.isListening && state.recognition?.abort();
+    if (state.realtime) stopRealtimeVoice("");
+    else if (state.mediaRecorder?.state === "recording") state.mediaRecorder.stop();
+    else state.isListening && state.recognition?.abort();
     window.speechSynthesis?.cancel();
     ui.stage.classList.remove("is-listening", "is-speaking");
     ui.stageMic.classList.remove("is-listening");
@@ -314,6 +319,7 @@
       startLead();
       return;
     }
+    if (state.realtime && sendRealtimeText(message)) return;
 
     const typing = addMessage("", "assistant", { typing: true });
     try {
@@ -416,10 +422,10 @@
     state.voiceConfigRequest = fetch(config.voiceConfigApi, { headers: { Accept: "application/json" } })
       .then((response) => response.ok ? response.json() : null)
       .then((capabilities) => {
-        state.voiceCapabilities = capabilities || { secureTranscription: false, naturalSpeech: false, browserFallback: true };
+        state.voiceCapabilities = capabilities || { secureTranscription: false, naturalSpeech: false, realtimeVoice: false, browserFallback: true };
         return state.voiceCapabilities;
       })
-      .catch(() => ({ secureTranscription: false, naturalSpeech: false, browserFallback: true }))
+      .catch(() => ({ secureTranscription: false, naturalSpeech: false, realtimeVoice: false, browserFallback: true }))
       .finally(() => { state.voiceConfigRequest = null; });
     return state.voiceConfigRequest;
   }
@@ -485,7 +491,10 @@
       if (state.retrySecureAfterNativeError) {
         state.retrySecureAfterNativeError = false;
         loadVoiceCapabilities().then((capabilities) => {
-          if (capabilities.secureTranscription && recordingSupported()) {
+          if (capabilities.realtimeVoice) {
+            showStatus("Switching to live voice…");
+            startRealtimeVoice().catch((error) => showStatus(error.message || "Live voice could not start. Please type your question instead."));
+          } else if (capabilities.secureTranscription && recordingSupported()) {
             showStatus("Switching to secure voice input…");
             startSecureRecording().catch((error) => showStatus(error.message || "Secure voice input could not start. Please type your question instead."));
           } else {
@@ -576,9 +585,158 @@
     recorder.start(250);
   }
 
+  function appendRealtimeAssistantText(delta, completedText = "") {
+    const session = state.realtime;
+    if (!session) return;
+    if (!session.assistantMessage) {
+      session.assistantMessage = addMessage("", "assistant");
+      session.assistantText = "";
+    }
+    session.assistantText = completedText || `${session.assistantText || ""}${delta || ""}`;
+    const paragraph = session.assistantMessage.querySelector(".wf-bubble p");
+    paragraph.textContent = session.assistantText;
+    ui.messages.scrollTop = ui.messages.scrollHeight;
+  }
+
+  function stopRealtimeVoice(status = "Live voice session ended.") {
+    const session = state.realtime;
+    if (!session) return;
+    state.realtime = null;
+    session.stream?.getTracks().forEach((track) => track.stop());
+    try { session.channel?.close(); } catch { /* already closed */ }
+    try { session.connection?.close(); } catch { /* already closed */ }
+    session.audio?.pause();
+    session.audio?.remove();
+    setListeningUi(false);
+    if (status) showStatus(status);
+  }
+
+  function handleRealtimeEvent(event) {
+    const session = state.realtime;
+    if (!session || !event?.type) return;
+    const type = event.type;
+    if (type === "input_audio_buffer.speech_started") {
+      showStatus("Listening…");
+      return;
+    }
+    if (type === "input_audio_buffer.speech_stopped") {
+      showStatus("WF Assist is thinking…");
+      return;
+    }
+    if (type === "conversation.item.input_audio_transcription.delta") {
+      if (!session.userMessage) {
+        session.userMessage = addMessage("", "user");
+        session.userText = "";
+      }
+      session.userText = `${session.userText || ""}${event.delta || ""}`;
+      session.userMessage.querySelector(".wf-bubble p").textContent = session.userText;
+      ui.messages.scrollTop = ui.messages.scrollHeight;
+      return;
+    }
+    if (type === "conversation.item.input_audio_transcription.completed" && event.transcript?.trim()) {
+      const transcript = event.transcript.trim();
+      if (session.userMessage) session.userMessage.querySelector(".wf-bubble p").textContent = transcript;
+      else addMessage(transcript, "user");
+      session.userMessage = null;
+      session.userText = "";
+      state.conversation.push({ role: "user", content: transcript });
+      return;
+    }
+    if (type === "response.created") {
+      session.assistantMessage = null;
+      session.assistantText = "";
+      showStatus("WF Assist is responding…");
+      return;
+    }
+    if (type === "response.output_audio_transcript.delta" || type === "response.output_text.delta") {
+      appendRealtimeAssistantText(event.delta || "");
+      showStatus("WF Assist is speaking…");
+      return;
+    }
+    if (type === "response.output_audio_transcript.done" || type === "response.output_text.done") {
+      appendRealtimeAssistantText("", event.transcript || event.text || "");
+      return;
+    }
+    if (type === "response.done") {
+      const spoken = session.assistantText?.trim();
+      if (spoken) state.conversation.push({ role: "assistant", content: spoken });
+      session.assistantMessage = null;
+      session.assistantText = "";
+      showStatus("Live voice is ready — speak whenever you’re ready.");
+      return;
+    }
+    if (type === "error") {
+      console.warn("WF realtime event error:", event.error || event);
+      showStatus("Live voice had a connection issue. Please try again.");
+    }
+  }
+
+  async function startRealtimeVoice() {
+    if (!window.RTCPeerConnection) throw new Error("Live voice is not supported by this browser. Please use a current version of Chrome, Edge, or Safari.");
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("This browser cannot access the microphone. Please type your question instead.");
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+    const connection = new RTCPeerConnection();
+    const audio = document.createElement("audio");
+    audio.autoplay = true;
+    audio.playsInline = true;
+    audio.style.display = "none";
+    document.body.append(audio);
+    connection.ontrack = (event) => {
+      audio.srcObject = event.streams[0];
+      audio.play().catch(() => {});
+    };
+    stream.getTracks().forEach((track) => connection.addTrack(track, stream));
+    const channel = connection.createDataChannel("oai-events");
+    const session = { connection, channel, stream, audio, assistantMessage: null, assistantText: "" };
+    state.realtime = session;
+    channel.onmessage = (message) => {
+      try { handleRealtimeEvent(JSON.parse(message.data)); } catch { /* Ignore non-JSON diagnostics. */ }
+    };
+    channel.onopen = () => showStatus("Live voice connected — speak naturally.");
+    channel.onerror = () => showStatus("Live voice data connection had a problem.");
+    connection.onconnectionstatechange = () => {
+      if (!state.realtime || state.realtime !== session) return;
+      if (["failed", "disconnected", "closed"].includes(connection.connectionState)) {
+        stopRealtimeVoice("Live voice connection ended. Tap the microphone to reconnect.");
+      }
+    };
+
+    const offer = await connection.createOffer();
+    await connection.setLocalDescription(offer);
+    const response = await fetch(config.realtimeApi, {
+      method: "POST",
+      headers: { "Content-Type": "application/sdp" },
+      body: offer.sdp,
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      stopRealtimeVoice("");
+      throw new Error(result.error || "Live voice could not connect.");
+    }
+    await connection.setRemoteDescription({ type: "answer", sdp: await response.text() });
+    setListeningUi(true);
+    showStatus("Live voice connected — speak naturally.");
+  }
+
+  function sendRealtimeText(message) {
+    const channel = state.realtime?.channel;
+    if (!channel || channel.readyState !== "open") return false;
+    channel.send(JSON.stringify({
+      type: "conversation.item.create",
+      item: { type: "message", role: "user", content: [{ type: "input_text", text: message }] },
+    }));
+    channel.send(JSON.stringify({ type: "response.create" }));
+    showStatus("WF Assist is thinking…");
+    return true;
+  }
+
   function toggleListening() {
     if (state.isListening) {
-      if (state.mediaRecorder?.state === "recording") state.mediaRecorder.stop();
+      if (state.realtime) stopRealtimeVoice();
+      else if (state.mediaRecorder?.state === "recording") state.mediaRecorder.stop();
       else state.recognition?.stop();
       return;
     }
@@ -590,8 +748,22 @@
       showStatus(message);
     });
 
+    const beginRealtimeVoice = () => startRealtimeVoice().catch((error) => {
+      // A transcription route remains available if the account does not yet have Realtime access.
+      console.warn("WF realtime voice unavailable:", error.message);
+      if (secureVoiceAvailable()) beginSecureVoice();
+      else showStatus(error.message || "Live voice could not start. Please try again.");
+    });
+
+    // A configured key starts a low-latency WebRTC conversation first. This avoids the browser
+    // vendor recognition network service shown in the screenshot and keeps live audio flowing.
+    if (state.voiceCapabilities?.realtimeVoice) {
+      beginRealtimeVoice();
+      return;
+    }
+
     // When a valid server-side key is configured, secure transcription is the reliable primary
-    // path. It avoids the browser vendor speech service shown in the screenshot.
+    // fallback. It avoids the browser vendor speech service shown in the screenshot.
     if (secureVoiceAvailable()) {
       beginSecureVoice();
       return;
@@ -610,13 +782,16 @@
     }
 
     loadVoiceCapabilities().then((capabilities) => {
-      if (capabilities.secureTranscription && recordingSupported()) beginSecureVoice();
+      if (capabilities.realtimeVoice) beginRealtimeVoice();
+      else if (capabilities.secureTranscription && recordingSupported()) beginSecureVoice();
       else showStatus("Voice input needs either browser speech recognition or a valid OPENAI_API_KEY for secure local transcription. You can continue with typed chat.");
     });
   }
   function resetConversation() {
     window.speechSynthesis?.cancel();
-    state.recognition?.abort();
+    if (state.realtime) stopRealtimeVoice("");
+    else if (state.mediaRecorder?.state === "recording") state.mediaRecorder.stop();
+    else state.recognition?.abort();
     ui.stage.classList.remove("is-listening", "is-speaking");
     ui.stageMic.classList.remove("is-listening");
     state.conversation = [];
