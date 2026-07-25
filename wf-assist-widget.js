@@ -17,11 +17,13 @@
   const localLeadApi = new URL("/api/wf-lead", scriptUrl.origin).href;
   const localTranscriptionApi = new URL("/api/wf-transcribe", scriptUrl.origin).href;
   const localSpeechApi = new URL("/api/wf-speech", scriptUrl.origin).href;
+  const localVoiceConfigApi = new URL("/api/wf-config", scriptUrl.origin).href;
   const config = {
     api: currentScript?.dataset.wfApi || localApi,
     leadApi: currentScript?.dataset.wfLeadApi || localLeadApi,
     transcribeApi: currentScript?.dataset.wfTranscribeApi || localTranscriptionApi,
     speechApi: currentScript?.dataset.wfSpeechApi || localSpeechApi,
+    voiceConfigApi: currentScript?.dataset.wfVoiceConfigApi || localVoiceConfigApi,
     logo: currentScript?.dataset.wfLogo || "https://wingsforever.pro/wp-content/uploads/2026/07/WF-final-logo-branding-animation-with-trannsperacy.gif",
     fallbackLogo: "https://wingsforever.pro/wp-content/uploads/2026/05/new-WF-2048x2048.png",
     title: currentScript?.dataset.wfTitle || "WF Assist",
@@ -128,6 +130,9 @@
     mediaRecorder: null,
     audioPlayer: null,
     preferSecureTranscription: false,
+    voiceCapabilities: null,
+    voiceConfigRequest: null,
+    retrySecureAfterNativeError: false,
     lead: null,
   };
 
@@ -405,6 +410,24 @@
   function recognitionSupported() { return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition); }
   function recordingSupported() { return Boolean(navigator.mediaDevices?.getUserMedia && window.MediaRecorder); }
 
+  function loadVoiceCapabilities() {
+    if (state.voiceCapabilities) return Promise.resolve(state.voiceCapabilities);
+    if (state.voiceConfigRequest) return state.voiceConfigRequest;
+    state.voiceConfigRequest = fetch(config.voiceConfigApi, { headers: { Accept: "application/json" } })
+      .then((response) => response.ok ? response.json() : null)
+      .then((capabilities) => {
+        state.voiceCapabilities = capabilities || { secureTranscription: false, naturalSpeech: false, browserFallback: true };
+        return state.voiceCapabilities;
+      })
+      .catch(() => ({ secureTranscription: false, naturalSpeech: false, browserFallback: true }))
+      .finally(() => { state.voiceConfigRequest = null; });
+    return state.voiceConfigRequest;
+  }
+
+  function secureVoiceAvailable() {
+    return Boolean(state.voiceCapabilities?.secureTranscription && recordingSupported());
+  }
+
   function setListeningUi(active) {
     state.isListening = active;
     ui.mic.classList.toggle("is-listening", active);
@@ -445,14 +468,30 @@
         "audio-capture": "No microphone was found. Check your device settings and try again.",
         "no-speech": "I didn’t hear anything. Please try again a little closer to the microphone.",
       };
-      if (event.error === "service-not-allowed" || event.error === "network") state.preferSecureTranscription = true;
+      if (event.error === "service-not-allowed" || event.error === "network") {
+        state.preferSecureTranscription = true;
+        state.retrySecureAfterNativeError = true;
+      }
       if (event.error !== "aborted") showStatus(messages[event.error] || "Voice input had a problem. Please try again.");
     };
     recognition.onend = () => {
       setListeningUi(false);
       if (finalTranscript.trim()) {
+        state.retrySecureAfterNativeError = false;
         showStatus("Thinking…");
         askAssistant(finalTranscript, true);
+        return;
+      }
+      if (state.retrySecureAfterNativeError) {
+        state.retrySecureAfterNativeError = false;
+        loadVoiceCapabilities().then((capabilities) => {
+          if (capabilities.secureTranscription && recordingSupported()) {
+            showStatus("Switching to secure voice input…");
+            startSecureRecording().catch((error) => showStatus(error.message || "Secure voice input could not start. Please type your question instead."));
+          } else {
+            showStatus("Browser speech recognition is unavailable. For reliable local voice chat, start WF Assist with a valid OPENAI_API_KEY, then restart the server.");
+          }
+        });
       } else if (ui.status.textContent === "Listening…") showStatus("");
     };
     state.recognition = recognition;
@@ -467,14 +506,55 @@
     const supportedType = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find((type) => MediaRecorder.isTypeSupported?.(type));
     const recorder = supportedType ? new MediaRecorder(stream, { mimeType: supportedType }) : new MediaRecorder(stream);
     const chunks = [];
+    let audioContext;
+    let analyser;
+    let silenceFrame;
+    let heardVoice = false;
+    let lastVoiceAt = Date.now();
+
+    const stopMeter = () => {
+      if (silenceFrame) cancelAnimationFrame(silenceFrame);
+      silenceFrame = null;
+      audioContext?.close().catch(() => {});
+    };
+    const monitorSpeech = () => {
+      if (!analyser || recorder.state !== "recording") return;
+      const samples = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(samples);
+      const average = samples.reduce((sum, sample) => sum + Math.abs(sample - 128), 0) / samples.length;
+      if (average > 7) {
+        heardVoice = true;
+        lastVoiceAt = Date.now();
+      }
+      // A short pause ends a turn naturally, while the microphone still works as a manual stop button.
+      if (heardVoice && Date.now() - lastVoiceAt > 1250) {
+        recorder.stop();
+        return;
+      }
+      silenceFrame = requestAnimationFrame(monitorSpeech);
+    };
+
     state.mediaRecorder = recorder;
     recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
     recorder.onstart = () => {
       setListeningUi(true);
-      showStatus("Listening securely… tap the microphone again when you finish.");
+      showStatus("Listening… speak naturally. WF Assist will respond after a short pause.");
       stopAudioReply();
+      try {
+        const AudioEngine = window.AudioContext || window.webkitAudioContext;
+        if (!AudioEngine) throw new Error("Audio analyser unavailable");
+        audioContext = new AudioEngine();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 512;
+        const source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+        monitorSpeech();
+      } catch {
+        // Manual stop still works if a browser does not expose the audio analyser.
+      }
     };
     recorder.onstop = async () => {
+      stopMeter();
       stream.getTracks().forEach((track) => track.stop());
       setListeningUi(false);
       state.mediaRecorder = null;
@@ -503,6 +583,20 @@
       return;
     }
 
+    const beginSecureVoice = () => startSecureRecording().catch((error) => {
+      const message = error.name === "NotAllowedError"
+        ? "Microphone permission is blocked. Allow it in your browser’s site settings, then tap the microphone again."
+        : (error.message || "I could not start the microphone. Please try again.");
+      showStatus(message);
+    });
+
+    // When a valid server-side key is configured, secure transcription is the reliable primary
+    // path. It avoids the browser vendor speech service shown in the screenshot.
+    if (secureVoiceAvailable()) {
+      beginSecureVoice();
+      return;
+    }
+
     // SpeechRecognition must start directly inside the button click. Awaiting a permission
     // request first can remove the browser's user-gesture permission and cause avoidable
     // "not allowed" / input errors on local installations.
@@ -515,11 +609,9 @@
       return;
     }
 
-    startSecureRecording().catch((error) => {
-      const message = error.name === "NotAllowedError"
-        ? "Microphone permission is blocked. Allow it in your browser’s site settings, then tap the microphone again."
-        : (error.message || "I could not start the microphone. Please try again.");
-      showStatus(message);
+    loadVoiceCapabilities().then((capabilities) => {
+      if (capabilities.secureTranscription && recordingSupported()) beginSecureVoice();
+      else showStatus("Voice input needs either browser speech recognition or a valid OPENAI_API_KEY for secure local transcription. You can continue with typed chat.");
     });
   }
   function resetConversation() {
@@ -559,6 +651,8 @@
   }));
 
   setVoiceReplies(state.voiceReplies);
+  // Check once on load so a local server with OPENAI_API_KEY starts the robust voice route first.
+  loadVoiceCapabilities();
   window.WFAssist = Object.freeze({
     open: () => openWidget(),
     close: closeWidget,

@@ -76,7 +76,7 @@ When explaining a creative or technical term, give a concise plain-language answ
 
 If the visitor asks outside the design / portfolio scope, you may answer briefly if it is harmless, then gently bring the conversation back to WF when relevant. For legal, payment, privacy, or account matters, say that a human should handle it and direct them to the contact email. Respect copyrights: do not reproduce protected work or say WF owns third-party brands or films.
 
-Formatting: use short paragraphs or compact bullets where they improve readability. No markdown tables. Voice replies must be 2–5 short sentences, with no long list. End naturally with one useful next question when it will help the visitor move forward.
+Formatting: use short paragraphs or compact bullets where they improve readability. No markdown tables. During a voice session, behave like an attentive person in a creative consultation: acknowledge the visitor’s idea, give a useful response in 1–3 naturally spoken sentences, and ask only one genuinely helpful follow-up question. Avoid headings, long lists, filler, or robotic phrases in voice replies. End naturally with one useful next question when it will help the visitor move forward.
 
 APPROVED PORTFOLIO CONTEXT:
 ${portfolioContext}`;
@@ -351,6 +351,17 @@ const server = createServer(async (request, response) => {
     response.setHeader("Access-Control-Allow-Headers", "Content-Type");
     response.setHeader("Access-Control-Max-Age", "86400");
     response.end();
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/wf-config") {
+    if (origin && !originAllowed(origin)) return sendJson(response, 403, { error: "This website is not approved to use WF Assist." }, origin);
+    // This deliberately reveals only feature availability, never provider credentials or configuration values.
+    sendJson(response, 200, {
+      secureTranscription: Boolean(openAiKey),
+      naturalSpeech: Boolean(openAiKey),
+      browserFallback: true,
+    }, origin);
     return;
   }
 
