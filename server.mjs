@@ -246,7 +246,7 @@ async function serveStatic(request, response) {
     setSecurityHeaders(response);
     response.statusCode = 200;
     response.setHeader("Content-Type", mimeTypes[extname(filePath)] || "application/octet-stream");
-    response.setHeader("Cache-Control", safePath === "/wf-assist-widget.js" ? "no-cache" : "public, max-age=3600");
+    response.setHeader("Cache-Control", ["/wf-assist-widget.js", "/index.html"].includes(safePath) ? "no-cache" : "public, max-age=3600");
     response.end(file);
   } catch {
     setSecurityHeaders(response);

@@ -9,7 +9,8 @@ It is designed to feel like a compact GPT/Copilot-style conversation: visitors c
 ## What this version does
 
 - **Floating website widget** — isolated in a Shadow DOM so a WordPress theme cannot accidentally restyle it.
-- **Voice and chat** — browser speech recognition for microphone input and speech synthesis for replies, with graceful typed-chat fallback.
+- **Cinematic live-session interface** — a responsive, motion-design-inspired visual stage beside a persistent written transcript, inspired by modern voice-call products without copying their UI.
+- **Voice and chat** — browser speech recognition for microphone input and speech synthesis for replies, with graceful typed-chat fallback. The transcript remains visible throughout the voice conversation.
 - **AI answers** — a server-side OpenAI integration when `OPENAI_API_KEY` is set. The browser never receives the secret.
 - **Portfolio grounding** — approved information about WF’s motion design, visual design, 3D concepts, creative process, portfolio structure, selected projects, and public contact links is included in the server instructions.
 - **Safe fallback** — without an AI key, it still provides concise, portfolio-specific answers for common questions; it does not pretend to be GPT or invent details.
