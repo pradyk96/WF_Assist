@@ -1,64 +1,142 @@
-# WF Telecom Voice Assist
+# WF Assist
 
-A polished browser-based voice and chat operator interface for **WF Telecom**. It is a functional first version built from the operator behaviour and services knowledge base supplied in this project.
+**WF Assist** is an embeddable, voice-enabled AI portfolio widget for [Wings Forever](https://wingsforever.pro/), the creative portfolio of freelance visual and motion designer **Pratyaksh Kumar**.
 
-## Included in this version
+It is designed to feel like a compact GPT/Copilot-style conversation: visitors can open a floating widget, type or speak a question, hear a reply, discover relevant projects, understand services, and begin a project enquiry.
 
-- Voice input through the browser's Web Speech Recognition API where supported
-- Spoken operator answers through the browser's Speech Synthesis API
-- Chat alternative for every voice interaction
-- First-line support flows for call quality, SIP registration, and general billing
-- Plain-language answers for VoIP, SIP trunking, DID numbers, international calling, wholesale voice, SMS, Cloud PBX, routing, porting, ASR/ACD/PDD, CLI, fraud protection, and API integration
-- Escalation wording for legal issues, payment disputes, confirmed outage reports, managers, and account-sensitive questions
-- Conversational lead qualification for service enquiries and a human-support form
-- In-session conversation context, including a short proposal qualification flow
-- Responsive and accessible user interface with keyboard focus states and reduced-motion support
+![WF Assist is a floating, dark-theme portfolio voice widget with a chat and microphone control.](https://wingsforever.pro/wp-content/uploads/2026/05/new-WF-2048x2048.png)
 
-## Run it locally
+## What this version does
 
-This app has no runtime framework dependencies. It uses Vite only as a local development server.
+- **Floating website widget** — isolated in a Shadow DOM so a WordPress theme cannot accidentally restyle it.
+- **Voice and chat** — browser speech recognition for microphone input and speech synthesis for replies, with graceful typed-chat fallback.
+- **AI answers** — a server-side OpenAI integration when `OPENAI_API_KEY` is set. The browser never receives the secret.
+- **Portfolio grounding** — approved information about WF’s motion design, visual design, 3D concepts, creative process, portfolio structure, selected projects, and public contact links is included in the server instructions.
+- **Safe fallback** — without an AI key, it still provides concise, portfolio-specific answers for common questions; it does not pretend to be GPT or invent details.
+- **Project enquiries** — a conversational lead flow collects name, company, work email, country/time zone, project description, and preferred timeline. It submits only when a `LEAD_WEBHOOK_URL` has been configured.
+- **Privacy and brand safeguards** — no fabricated pricing, deadlines, availability, client claims, or guarantees; no account/payment data requests; no user data is sent to an AI provider during the dedicated lead-capture flow.
+
+## Local preview
+
+### Prerequisites
+
+- Node.js **20+**
+- An OpenAI API key only if you want live GPT-powered answers
+
+### Start the app
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open the local address Vite displays (normally `http://localhost:5173`).
+Open [http://localhost:5173](http://localhost:5173). Select **Try WF Assist** in the demo page or use the floating WF button in the lower-right corner.
 
-Alternatively, the static files can be served by any web server:
+> `localhost` works only on the same computer where the command is running. An Arena sandbox URL is not a public website deployment.
+
+### Enable live AI answers locally
+
+**macOS/Linux**
 
 ```bash
-python3 -m http.server 8080
+export OPENAI_API_KEY="your_key_here"
+export OPENAI_MODEL="gpt-4.1-mini"
+npm run dev
 ```
 
-Open `http://localhost:8080`.
+**Windows PowerShell**
 
-## Voice support
+```powershell
+$env:OPENAI_API_KEY="your_key_here"
+$env:OPENAI_MODEL="gpt-4.1-mini"
+npm run dev
+```
 
-Voice input depends on the device and browser. Current Chromium-based browsers normally support it; support differs across Safari and Firefox versions. The app detects unavailable voice recognition and keeps the full chat experience available. Microphone access is requested only after the visitor presses **Speak to WF**.
+`OPENAI_MODEL` is optional; it defaults to `gpt-4.1-mini`. Use a model available to your OpenAI account. Never put an API key in the WordPress page, widget script tag, Git repository, or browser code.
 
-Voice responses use the voice installed in the visitor's browser/device, so the exact voice cannot be guaranteed by this front end.
+## Add WF Assist to wingsforever.pro
 
-## Important production integration notes
+A real GPT-level widget needs a secure server because its AI key must remain private. Deploy this small Node app to a host that supports environment variables (for example, a managed Node host or a server you control), then add this **single script tag** once to the site footer.
 
-This is deliberately a **front-end MVP**. It never sends a lead or account data to a third party, and it does not access telecom systems. The support form stores a draft only for the current browser session and clearly tells the visitor that it has not been submitted.
+```html
+<script
+  src="https://assist.your-domain.com/wf-assist-widget.js"
+  data-wf-api="https://assist.your-domain.com/api/wf-assist"
+  data-wf-lead-api="https://assist.your-domain.com/api/wf-lead"
+  data-wf-title="WF Assist"
+  data-wf-site-url="https://wingsforever.pro/"
+></script>
+```
 
-Before launch, connect it to secure server-side services for:
+### WordPress installation
 
-1. **AI responses:** replace or extend `AssistantEngine.reply()` in `app.js` with a server-side endpoint. Keep API keys off the browser and apply the WF escalation and privacy rules at the server layer.
-2. **Lead submission:** replace the `sessionStorage` logic in the `leadForm` submit handler with an authenticated CRM, ticketing, or secure email endpoint. Add consent text, retention rules, and abuse protection appropriate to the operating countries.
-3. **Live account/network support:** require authenticated, verified users before exposing account, invoice, provisioning, or outage information. Do not expose internal topology, routes, credentials, or other customers' data.
-4. **Knowledge accuracy:** connect plans, rates, coverage, porting rules, and service status to approved live data. The assistant is intentionally written not to guess these details.
-5. **Observability:** log only privacy-approved operational events, monitor handoffs, and have a human escalation path with defined response targets.
+1. Deploy this app first and set its production environment variables (below).
+2. In WordPress, add the script tag **once** using the theme’s footer-code field, a trusted header/footer injection plugin, or an Elementor/WordPress custom-code location set to **Footer**.
+3. Replace `https://assist.your-domain.com` with the deployed assistant domain.
+4. Clear any page/cache/CDN cache and test on desktop and mobile.
+5. In the deployed app, set `ALLOWED_ORIGINS` to your real website origins. Do not use a wildcard in production.
 
-## Project files
+Do not paste `wf-assist-widget.js` into a page editor that strips `<script>` tags. The JavaScript file must be served from a trusted HTTPS domain.
 
-- `index.html` — accessible page structure and dialogs
-- `styles.css` — responsive visual system and voice-state animation
-- `app.js` — voice controls, chat UI, telecom conversation logic, safety rules, and session context
+## Production environment variables
 
-## Verify JavaScript syntax
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | Yes for live AI | Secret server-side key used to call the Responses API. Without it, the safe portfolio-guide fallback runs. |
+| `OPENAI_MODEL` | No | AI model name. Defaults to `gpt-4.1-mini`; set this to a model enabled on your account. |
+| `ALLOWED_ORIGINS` | Yes in production | Comma-separated origins allowed to call the API, e.g. `https://wingsforever.pro,https://www.wingsforever.pro`. |
+| `LEAD_WEBHOOK_URL` | Yes for automatic lead delivery | HTTPS webhook for your CRM, Zapier/Make scenario, ticket tool, or secure server endpoint. Without it, WF Assist transparently asks visitors to email instead of falsely claiming an enquiry was sent. |
+| `PORT` | No | Server port; defaults to `5173`. |
+
+### Lead webhook contract
+
+When configured, WF Assist `POST`s this JSON to `LEAD_WEBHOOK_URL`:
+
+```json
+{
+  "name": "Visitor name",
+  "company": "Company or personal",
+  "email": "visitor@example.com",
+  "country": "Country or time zone",
+  "project": "Project description",
+  "timeline": "Preferred timing",
+  "source": "WF Assist website widget",
+  "receivedAt": "ISO-8601 timestamp"
+}
+```
+
+Use a secure endpoint that validates the request, protects lead data, and complies with the privacy requirements that apply to the website. The included server checks the basic form shape and forwards it; it does not store leads itself.
+
+## How answers are kept on-brand
+
+`server.mjs` contains a deliberately bounded system instruction and a verified portfolio context based on the public Wings Forever site, including:
+
+- Freelance visual/motion design positioning and remote collaboration
+- Motion Design Lab, Visual Design Archive, Wings Projects, and Wings Blogs
+- Relevant creative capabilities and workflow tools
+- Selected projects such as **Through the Eyes of Football**, **The Dream Pursuit**, **Global Race**, **Gone Wild**, and **Kinsmen Second Class**
+- Public portfolio and contact links
+
+Update `portfolioContext` in `server.mjs` whenever portfolio pages, services, contact details, availability, or policies change. This is essential—AI answers are only as current as their approved source material.
+
+## Project structure
+
+- `wf-assist-widget.js` — self-contained Shadow DOM widget; this is the file embedded on the website.
+- `server.mjs` — static server, protected AI endpoint, rate limiting, CORS allow-list, portfolio instructions, and optional lead webhook.
+- `index.html` / `styles.css` — local preview page for testing the widget.
+
+## Verify the code
 
 ```bash
 npm run check
 ```
+
+## Before going live
+
+- Set the API key and allowed origins only in the host’s secret/environment-variable settings.
+- Use HTTPS for the widget and API. Microphone access generally requires it in production.
+- Verify every service description, project reference, link, and public contact detail.
+- Test the voice experience in Chrome and Edge; browser speech recognition varies by device and browser.
+- Test the enquiry webhook end-to-end, including failed delivery and privacy notices.
+- Add a link to the site privacy policy near the widget if visitor details will be collected.
+- Monitor usage and costs, and maintain a human follow-up process for project enquiries.

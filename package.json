@@ -1,14 +1,15 @@
 {
-  "name": "wf-telecom-voice-assist",
-  "version": "0.1.0",
+  "name": "wf-assist",
+  "version": "0.2.0",
   "private": true,
-  "description": "A browser-based voice and chat operator interface for WF Telecom.",
+  "description": "Embeddable, voice-enabled AI portfolio assistant for Wings Forever.",
+  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "preview": "vite preview",
-    "check": "node --check app.js"
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && node --check wf-assist-widget.js"
   },
-  "devDependencies": {
-    "vite": "^7.1.7"
+  "engines": {
+    "node": ">=20"
   }
 }
